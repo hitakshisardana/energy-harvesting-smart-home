@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EHSH common data interface (Section 29) - FREEZE before parallel work",
+  "description": "Two MQTT message types exchanged between an energy-harvesting sensor node (Wokwi or the Python software sim) and the mains-powered home hub.",
+  "definitions": {
+    "NodeState": {
+      "type": "object",
+      "description": "Published by a node to  ehsh/<prefix>/<node_id>/state  every sampling interval and on every event.",
+      "required": ["node_id", "ts", "stored_energy_pct", "mode", "sampling_interval_s"],
+      "additionalProperties": false,
+      "properties": {
+        "node_id":   { "type": "string", "enum": ["floor", "door", "furniture", "gym", "ambient"] },
+        "ts":        { "type": "integer", "description": "node uptime in ms (Wokwi) or sim step index" },
+        "stored_energy_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "mode":      { "type": "string", "enum": ["CRITICAL", "LOW", "MEDIUM", "HIGH"] },
+        "sampling_interval_s": { "type": "integer", "minimum": 0 },
+        "last_event": { "type": "string", "enum": ["none", "motion", "door", "button", "alarm"] },
+        "sensor":    {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "temp_c": { "type": "number" },
+            "rh":     { "type": "number" }
+          }
+        },
+        "fw": { "type": "string", "description": "firmware / sim version" }
+      }
+    },
+    "ScheduleCommand": {
+      "type": "object",
+      "description": "Published by the hub to  ehsh/<prefix>/<node_id>/schedule  after forecasting + scheduling. The node applies it until the next command.",
+      "required": ["node_id", "mode", "sampling_interval_s", "schedule_ts"],
+      "additionalProperties": false,
+      "properties": {
+        "node_id":   { "type": "string", "enum": ["floor", "door", "furniture", "gym", "ambient"] },
+        "mode":      { "type": "string", "enum": ["CRITICAL", "LOW", "MEDIUM", "HIGH"] },
+        "sampling_interval_s": { "type": "integer", "minimum": 0 },
+        "task_set":  {
+          "type": "array",
+          "items": { "type": "string", "enum": ["occupancy", "environment", "door", "sleep", "nightlight", "alarm"] }
+        },
+        "stored_energy_pct": {
+          "type": "number", "minimum": 0, "maximum": 100,
+          "description": "OPTIONAL. If present, the node uses this as its energy level instead of its own potentiometer - lets the Python sim drive node energy during a closed-loop run."
+        },
+        "schedule_ts": { "type": "integer" }
+      }
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/definitions/NodeState" },
+    { "$ref": "#/definitions/ScheduleCommand" }
+  ]
+}

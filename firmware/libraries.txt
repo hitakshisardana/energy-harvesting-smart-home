@@ -1,0 +1,7 @@
+# Wokwi reads this file and auto-installs the libraries.
+PubSubClient
+ArduinoJson
+DHT sensor library
+Adafruit SSD1306
+Adafruit GFX Library
+Adafruit Unified Sensor

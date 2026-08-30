@@ -1,0 +1,32 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.ipynb_checkpoints/
+
+# --- data & generated output (regenerate with the scripts) ---
+data/raw/*
+data/processed/*
+reports/*
+*.parquet
+
+# --- models / logs ---
+*.pt
+*.pth
+*.ckpt
+runs/
+mlruns/
+wandb/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+~$*.docx
+
+# keep folder placeholders
+!**/.gitkeep

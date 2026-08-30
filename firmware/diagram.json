@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "author": "EHSH team",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-c3-devkitm-1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+
+    { "type": "wokwi-potentiometer", "id": "pot1", "top": -130, "left": 210,
+      "attrs": { "value": "500" } },
+
+    { "type": "wokwi-pir-motion-sensor", "id": "pir1", "top": 120, "left": 210, "attrs": {} },
+
+    { "type": "wokwi-pushbutton", "id": "btn1", "top": 240, "left": 0,
+      "attrs": { "color": "green", "label": "event" } },
+
+    { "type": "wokwi-dht22", "id": "dht1", "top": -40, "left": -190, "attrs": {} },
+
+    { "type": "wokwi-led", "id": "led1", "top": 100, "left": -150,
+      "attrs": { "color": "red", "label": "sensing" } },
+    { "type": "wokwi-resistor", "id": "r1", "top": 130, "left": -60,
+      "attrs": { "value": "220" } },
+
+    { "type": "board-ssd1306", "id": "oled1", "top": -170, "left": 60,
+      "attrs": { "i2cAddress": "0x3c" } }
+  ],
+  "connections": [
+    [ "esp:5V",  "pot1:VCC", "red",   [] ],
+    [ "esp:GND", "pot1:GND", "black", [] ],
+    [ "pot1:SIG", "esp:2",   "green", [] ],
+
+    [ "esp:3V3", "pir1:VCC", "red",   [] ],
+    [ "esp:GND", "pir1:GND", "black", [] ],
+    [ "pir1:OUT", "esp:3",   "green", [] ],
+
+    [ "btn1:1.l", "esp:4",   "green", [] ],
+    [ "btn1:2.l", "esp:GND", "black", [] ],
+
+    [ "esp:3V3", "dht1:VCC", "red",   [] ],
+    [ "esp:GND", "dht1:GND", "black", [] ],
+    [ "dht1:SDA", "esp:10",  "green", [] ],
+
+    [ "esp:5",  "r1:1",      "green", [] ],
+    [ "r1:2",   "led1:A",    "green", [] ],
+    [ "led1:C", "esp:GND",   "black", [] ],
+
+    [ "esp:3V3", "oled1:VCC", "red",   [] ],
+    [ "esp:GND", "oled1:GND", "black", [] ],
+    [ "esp:8",  "oled1:SDA",  "green", [] ],
+    [ "esp:9",  "oled1:SCL",  "green", [] ]
+  ]
+}

@@ -1,0 +1,12 @@
+# Phase 1 (dataset + energy simulator). Already present in your Python 3.11 env.
+numpy>=1.26
+pandas>=2.0
+matplotlib>=3.7
+scipy>=1.11
+scikit-learn>=1.3
+
+# Added later:
+#   torch            - Phase 4 LSTM/GRU
+#   paho-mqtt        - Phase 3 Wokwi <-> Python
+#   pulp  (or mip)   - Phase 7 MILP
+#   gymnasium        - Phase 6 RL env (already installed)
