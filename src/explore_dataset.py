@@ -25,31 +25,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from casas_io import ON_STATES, OFF_STATES, load
+
 ROOT = Path(__file__).resolve().parents[1]
 REPORTS = ROOT / "reports"
-
-ON_STATES = {"ON", "OPEN", "PRESENT", "OPENED"}
-OFF_STATES = {"OFF", "CLOSE", "ABSENT", "CLOSED"}
-
-
-def load(path: Path) -> pd.DataFrame:
-    """CASAS log: date, time, zone/sensor, state, [activity label]. No header."""
-    rows = []
-    with open(path, "r", encoding="utf-8", errors="replace") as f:
-        for line in f:
-            line = line.rstrip("\n")
-            if not line:
-                continue
-            parts = line.split(",", 4)
-            if len(parts) < 4:
-                continue
-            date, tm, zone, state = parts[0], parts[1], parts[2], parts[3]
-            label = parts[4] if len(parts) == 5 else ""
-            rows.append((date + " " + tm, zone.strip(), state.strip(), label.strip()))
-    df = pd.DataFrame(rows, columns=["ts", "zone", "state", "label"])
-    df["ts"] = pd.to_datetime(df["ts"], errors="coerce", format="mixed")
-    df = df.dropna(subset=["ts"]).sort_values("ts").reset_index(drop=True)
-    return df
 
 
 def classify(zone: str, state: str) -> str:

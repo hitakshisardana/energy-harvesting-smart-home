@@ -1,0 +1,38 @@
+# Which CASAS room feeds which virtual node (plan Section 10).
+# FREEZE this in Phase 0 - build_events.py and the simulator both rely on it.
+#
+# Per virtual node:
+#   motion:              zones whose motion-ON events become event_type "motion"
+#   door:                zones whose ON events become event_type "door"
+#   motion_during_sleep: zones counted only inside a Sleep-labelled interval,
+#                        tagged event_type "sleep_presence"
+#
+# "gym" has no CASAS equivalent - it is synthesized separately, not by this file.
+
+nodes: [floor, door, furniture, gym, ambient]
+
+testbeds:
+
+  hh104:                      # primary trace - 61 days, clean
+    floor:     { motion: [Kitchen, LivingRoom] }
+    door:      { door:   [OutsideDoor] }
+    furniture: { motion: [LoungeChair], motion_during_sleep: [Bedroom] }
+    ambient:   { motion: [WorkArea, Bathroom] }
+
+  hh101:                      # 60 days, no LoungeChair/WorkArea zones
+    floor:     { motion: [Kitchen, LivingRoom] }
+    door:      { door:   [OutsideDoor] }
+    furniture: { motion_during_sleep: [Bedroom] }
+    ambient:   { motion: [Bathroom, DiningRoom] }
+
+  mn50:                       # Milan 2019, 15 days
+    floor:     { motion: [Kitchen, LivingRoom] }
+    door:      { door:   [OutsideDoor] }
+    furniture: { motion_during_sleep: [Bedroom] }
+    ambient:   { motion: [Bathroom, Office, Hall] }
+
+  mn51:                       # Milan 2019, 30 days (has a 36 h gap)
+    floor:     { motion: [Kitchen, LivingRoom] }
+    door:      { door:   [OutsideDoor] }
+    furniture: { motion_during_sleep: [Bedroom] }
+    ambient:   { motion: [Bathroom] }
