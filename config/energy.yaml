@@ -30,18 +30,30 @@ meta:
 # comfortable. Nobody has measured it. Treat it as the independent variable of
 # the whole study, not as a constant to be picked.
 transduction:
-  footsteps_per_motion_event:
+  footsteps_per_visit:
     src: SWEPT
-    range: [1, 3, 5, 10, 20]
-    default: 5
+    range: [5, 10, 20, 40, 80]
+    default: 20
     note: >
-      MUST appear as a sensitivity axis in every energy result. If a headline
-      number depends on this value, state the value next to the number.
+      Applies to VISITS, not raw sensor events. A PIR re-triggers ~1 Hz while
+      someone is present, so raw event count measures presence, not motion --
+      the floor node fires ~32 events per 34 s visit. Multiplying raw events
+      by a per-event factor overestimated floor harvest by ~16x and made dead
+      nodes look alive. Events are debounced into visits (see harvesting.py,
+      DEBOUNCE_S) before this multiplier is applied.
+      MUST appear as a sensitivity axis in every energy result.
+
+  debounce_s:
+    src: SWEPT
+    range: [30, 60, 120]
+    default: 60
+    note: gap above which two detections count as separate visits. Sweep it.
 
   compressions_per_furniture_event:
     src: SWEPT
     range: [1, 2, 5]
     default: 2
+    # also applies per visit, not per raw event
     note: sleep_presence events are re-triggers of a sleeper shifting position.
 
   flybys_per_door_event:
