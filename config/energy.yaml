@@ -1,0 +1,273 @@
+# Energy constants for the simulator. Single source of truth — no energy
+# number belongs in Python code.
+#
+# EVERY value carries a `src` tag. Do not add a line without one.
+#   MEASURED    bench measurement, with date + method
+#   DATASHEET   from a part datasheet, with the part named
+#   DERIVED     computed from other lines here
+#   PLACEHOLDER literature-typical guess. MUST be replaced in Phase 1a.
+#   SWEPT       not a constant. Run the experiment across the whole range and
+#               report sensitivity. Never quote a single value from these.
+#
+# Units: millijoules (mJ) everywhere. Never volts, never percent.
+# `stored_energy_pct` in the MQTT schema is a rendering of e_max_mj, not a unit.
+
+meta:
+  version: 1
+  trace: hh104
+  notes: >
+    Event rates are measured from data/processed/events_hh104.parquet
+    (61 days, 127,840 events). Everything else is placeholder until Phase 1a.
+
+# ---------------------------------------------------------------------------
+# 1. THE PARAMETER THAT DECIDES THE PROJECT
+# ---------------------------------------------------------------------------
+# A CASAS motion-ON event is a PRESENCE DETECTION, not a footstep. One person
+# crossing the kitchen fires one event and takes some unknown number of steps.
+# Harvest scales with steps, not with events.
+#
+# At 1x the floor node is dead. At ~3x it clears its own overhead. At 10x it is
+# comfortable. Nobody has measured it. Treat it as the independent variable of
+# the whole study, not as a constant to be picked.
+transduction:
+  footsteps_per_motion_event:
+    src: SWEPT
+    range: [1, 3, 5, 10, 20]
+    default: 5
+    note: >
+      MUST appear as a sensitivity axis in every energy result. If a headline
+      number depends on this value, state the value next to the number.
+
+  compressions_per_furniture_event:
+    src: SWEPT
+    range: [1, 2, 5]
+    default: 2
+    note: sleep_presence events are re-triggers of a sleeper shifting position.
+
+  flybys_per_door_event:
+    src: DERIVED
+    value: 1
+    note: >
+      One door opening is one magnet flyby. No multiplier applies here, which
+      is why the door node cannot be rescued by transduction assumptions.
+
+# ---------------------------------------------------------------------------
+# 2. HARVEST — energy reaching the store, per primitive event
+# ---------------------------------------------------------------------------
+harvest:
+  efficiency:
+    rectifier:
+      src: PLACEHOLDER
+      value: 0.55
+      note: >
+        Full-wave bridge on a high-impedance piezo loses two diode drops
+        against a low-current source. Schottky or active rectification does
+        better. MEASURE.
+    pmic:
+      src: PLACEHOLDER
+      value: 0.60
+      note: >
+        BQ25504-class. The binding constraint is COLD START (~600 mV, ~15 uW),
+        not steady-state efficiency. A piezo delivering only short spikes may
+        never cold-start at all. Test from a fully drained cap.
+
+  per_event_raw_mj:
+    footstep:
+      src: PLACEHOLDER
+      value: 0.60
+      note: piezo disc array, 4 discs. Literature spread is 0.05-2 mJ. MEASURE.
+    compression:
+      src: PLACEHOLDER
+      value: 0.25
+      note: slower strain rate than a footstep, expect less.
+    door_flyby:
+      src: PLACEHOLDER
+      value: 0.40
+      note: depends on magnet strength, coil turns, door speed.
+    gym_session:
+      src: PLACEHOLDER
+      value: 1500.0
+      note: >
+        ~150 mW for 10 s from a hand-cranked geared DC motor. Dominates every
+        other source by 2-3 orders of magnitude. Report gym results separately;
+        never let it into an average.
+
+  # Occupancy-INDEPENDENT source. Untested, and the most important open
+  # question in the design: every real source in hh104 is correlated with
+  # occupancy, so none of them harvest during the silence the others face.
+  indoor_pv_uw:
+    src: SWEPT
+    range: [0, 10, 30, 50, 100, 200]
+    default: 30
+    note: >
+      Average output under room light while lit. Simulation shows the weak
+      nodes cross from dead to alive between 10 and 50 uW, so this range must
+      be swept, not fixed. A few cm2 of indoor PV at typical room light is
+      plausibly tens of uW. MEASURE with the actual cell and room.
+    daylight_hours_per_day:
+      src: PLACEHOLDER
+      value: 12
+
+# ---------------------------------------------------------------------------
+# 3. TASK COSTS — ESP32-C3, mJ per operation
+# ---------------------------------------------------------------------------
+# Derived as I(mA) * t(ms) * 3.3 V / 1000. All currents DATASHEET-typical;
+# measure yours with a shunt + scope or a power profiler.
+tasks:
+  rail_voltage_v: {src: PLACEHOLDER, value: 3.3}
+
+  occ_sense_mj:   {src: PLACEHOLDER, value: 3.894, note: wake + PIR/FSR read + count update}
+  env_sense_mj:   {src: PLACEHOLDER, value: 2.442, note: wake + BME280 forced-mode + I2C read}
+  door_sense_mj:  {src: PLACEHOLDER, value: 1.122, note: GPIO-interrupt wake + reed read}
+  alarm_mj:       {src: PLACEHOLDER, value: 28.05, note: detect + local indicator pulse}
+
+  tx_ble_mj:      {src: PLACEHOLDER, value: 3.086, note: one advertisement}
+  tx_espnow_mj:   {src: PLACEHOLDER, value: 7.755, note: one packet, no association}
+  tx_wifi_mj:
+    src: PLACEHOLDER
+    value: 789.0
+    note: >
+      Association + DHCP + MQTT connect + publish. ~100x an ESP-NOW packet.
+      At the measured floor-node rate this is TEN DAYS of harvest for one
+      transmission. Nodes must not speak MQTT directly — route via a
+      mains-powered gateway over ESP-NOW/BLE. The interface schema is
+      unaffected; only the node-to-gateway hop changes.
+
+# ---------------------------------------------------------------------------
+# 4. STORAGE
+# ---------------------------------------------------------------------------
+# Usable energy = 0.5 * C * (Vmax^2 - Vmin^2). Vmin is the regulator dropout,
+# NOT zero: charge below it exists but cannot be spent.
+storage:
+  selected: A_low_leak
+
+  options:
+    A_low_leak:
+      src: PLACEHOLDER
+      capacitance_f: 0.047
+      v_max: 5.0
+      v_min_usable: 2.5
+      e_max_mj: 440.6
+      leak_ua: 1.0
+      note: Smaller and low-leakage. Preferred — see the overhead note below.
+    B_standard:
+      src: PLACEHOLDER
+      capacitance_f: 0.10
+      v_max: 5.0
+      v_min_usable: 2.5
+      e_max_mj: 937.5
+      leak_ua: 5.0
+      note: More reserve, but 5x the leakage. Usually a net loss on weak nodes.
+
+# ---------------------------------------------------------------------------
+# 5. STANDING OVERHEAD — runs 24/7 whether or not the node ever senses
+# ---------------------------------------------------------------------------
+# THIS IS THE FIRST THING TO ATTACK. On placeholder values, leakage plus sleep
+# exceeds what every real node except gym harvests in a day. Until overhead
+# sits below daily harvest, the scheduler has nothing to allocate and no ML
+# layer can help.
+#
+# The member-3 brief's placeholder of "0.1 %/hour of E_max" works out to ~22
+# mJ/day. A real supercapacitor at 5 uA burns ~2160 mJ/day — roughly 100x
+# more. Do not use the brief's figure.
+overhead:
+  leakage_mj_per_day:
+    src: DERIVED
+    formula: leak_ua * 1e-6 * v_max * 86400 * 1000
+    at_selected: 432.0
+    note: Worst case, computed at V max. Real leakage falls after soak. MEASURE.
+
+  mcu_sleep_ua:
+    src: SWEPT
+    range: [0.5, 1.0, 5.0]
+    default: 1.0
+    note: >
+      ESP32-C3 deep sleep is ~5 uA typical = ~1426 mJ/day, against a floor node
+      harvesting ~240 mJ/day. The MCU is ~6x over budget before doing any work.
+      Dev boards are far worse than the bare module (regulators, USB-UART
+      bridge, power LED). Either strip the board, move to a sub-uA MCU class,
+      or make the node transient-powered with no persistent state at all.
+  mcu_sleep_mj_per_day:
+    src: DERIVED
+    formula: mcu_sleep_ua * 1e-6 * rail_voltage_v * 86400 * 1000
+    at_default: 285.1
+
+# ---------------------------------------------------------------------------
+# 6. MEASURED EVENT RATES — from events_hh104.parquet, 61 days
+# ---------------------------------------------------------------------------
+# These are the only MEASURED numbers in this file. They are event rates, not
+# energy: multiply by the transduction factors in section 1.
+nodes:
+  floor:
+    src: MEASURED
+    events_per_day: 1205.2
+    event_type: motion
+    frac_time_silent: 0.708
+    silence_p99_over_median: 14.0
+    note: >
+      The only node with heavy-tailed silence (night median 240 min vs day 30
+      min). A constant reserve must be sized for the 12 h tail while the
+      typical case needs 45 min — which is exactly the condition where a
+      forecast-driven reserve can win. The reserve claim is a FLOOR-NODE claim.
+
+  ambient:
+    src: MEASURED
+    events_per_day: 550.8
+    event_type: motion
+    frac_time_silent: 0.624
+    silence_p99_over_median: 5.7
+    note: Regular silence. Expect a tuned constant reserve to match a forecast.
+
+  furniture:
+    src: MEASURED
+    events_per_day: 287.4
+    event_type: [motion, sleep_presence]
+    frac_time_silent: 0.668
+    silence_p99_over_median: 5.33
+    note: >
+      Covers only 13.7 % of the windows where floor/door/ambient are all
+      silent, with identical 45 min night and day medians. It is NOT the
+      anti-correlated night source DATA_NOTES.md implies. Correct that file.
+
+  door:
+    src: MEASURED
+    events_per_day: 52.3
+    event_type: door
+    frac_time_silent: 0.759
+    silence_p99_over_median: 6.0
+    note: >
+      DEAD ON REAL DATA. ~7.5 mJ/day at placeholder conversion, against 717
+      mJ/day of overhead — a ~96x shortfall, and no transduction multiplier
+      applies to door flybys. Re-scope as a transient, unpowered,
+      event-triggered reporter with no store and no sleep current.
+
+  gym:
+    src: SYNTHETIC
+    sessions_per_week: 4
+    session_minutes: 20
+    note: >
+      No CASAS equivalent. Trace is generated in silence_analysis.py,
+      conditioned on real hh104 occupancy so it cannot produce sessions while
+      the home is empty. Its silence statistics are small-sample noise (~35
+      sessions) — do not quote them. Adding gym changes coverage silence by
+      0.000 across four seeds, because every gym-active window is already
+      covered by a real node. Report gym only as a labelled ablation.
+
+# ---------------------------------------------------------------------------
+# 7. SIMULATOR
+# ---------------------------------------------------------------------------
+sim:
+  timestep_s: {src: PLACEHOLDER, value: 60}
+  forecast_window_min:
+    src: DERIVED
+    value: 15
+    note: >
+      M2 forecasts at 15 min; the simulator steps at 60 s — 15x finer. Write
+      down how a coarse forecast maps onto fine-grained decisions BEFORE
+      building the RL environment around it.
+  e_init_fraction: {src: PLACEHOLDER, value: 0.5, note: identical across all schedulers compared}
+  seeds: {src: PLACEHOLDER, value: 5, note: report mean +/- std; single runs are not evidence}
+  primary_metric:
+    value: critical_event_capture_rate_during_silence
+    note: One metric. Reward, MILP objective and headline plot all target it.
+  secondary_metrics: [detections_reported, information_latency, reserve_violations, energy_wasted_overflow]
