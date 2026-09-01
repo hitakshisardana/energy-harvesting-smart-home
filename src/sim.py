@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from storage import storage_from_config, val
-from schedulers import SilenceForecaster
+from schedulers import SilenceForecaster, OracleForecaster
 
 
 def task_costs(cfg):
@@ -22,7 +22,7 @@ def task_costs(cfg):
 
 def run_node(node, harvest, events, cfg, sched_factory, timestep_s,
              crit_per_day=24.0, seed=0, warmup_frac=0.2, silence_win=30,
-             interrupt_driven=True):
+             interrupt_driven=True, forecaster="hist"):
     """
     interrupt_driven: a real harvesting node does NOT poll. It wakes on an
     interrupt from the harvest event itself, so paid sensing can only be
@@ -42,9 +42,15 @@ def run_node(node, harvest, events, cfg, sched_factory, timestep_s,
     costs = task_costs(cfg)
 
     # "silence" = inflow below standing overhead, not inflow == 0
-    fc = SilenceForecaster(spd, starve_mj_per_step=store.overhead_per_step)
     warm = int(warmup_frac * n)
-    fc.fit(h[:warm])                      # train on the warmup span only
+    if forecaster == "oracle":
+        # UPPER BOUND ONLY. Sees the true future harvest, so S3/S4 results here
+        # are the ceiling on what ANY forecaster can deliver. Never report an
+        # oracle number as a method result.
+        fc = OracleForecaster(h, starve_mj_per_step=store.overhead_per_step)
+    else:
+        fc = SilenceForecaster(spd, starve_mj_per_step=store.overhead_per_step)
+        fc.fit(h[:warm])                  # train on the warmup span only
     sched = sched_factory(fc)
 
     rng = np.random.default_rng(seed)

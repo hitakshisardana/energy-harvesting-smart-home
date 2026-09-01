@@ -218,3 +218,46 @@ class S4_ForecastRate(Scheduler):
 
     def tx_reserve(self, store, t, ctx):
         return ctx["costs"]["alarm"]
+
+class OracleForecaster:
+    """
+    PERFECT knowledge of the future harvest. NOT a model and NOT a deliverable
+    -- it is an UPPER BOUND. No forecaster (histogram, LSTM, transformer) can
+    beat perfect information, so whatever a scheduler achieves with this is the
+    ceiling on what better forecasting can ever buy.
+
+    Interface-identical to SilenceForecaster, so S3/S4 are untouched: they ask
+    `upcoming_silence(t, lookahead)` and cannot tell where the answer came from.
+
+    Read the result as a decision, not a score:
+      oracle ~= histogram  -> prediction is NOT the bottleneck. Training a
+                              sequence model cannot rescue the metric; the
+                              energy budget is binding. Report that.
+      oracle >> histogram  -> there is real headroom. Forecasting is the
+                              contribution and the gap is its budget.
+    """
+    name = "oracle"
+
+    def __init__(self, harvest, starve_mj_per_step: float = 0.0):
+        # same silence definition as SilenceForecaster: below standing overhead
+        self.silent = np.asarray(harvest) <= float(starve_mj_per_step)
+        self.n = len(self.silent)
+
+    def fit(self, harvest):        # nothing to fit; kept for interface parity
+        return self
+
+    def p_harvest(self, t):
+        t = int(t)
+        return 0.0 if (t < self.n and self.silent[t]) else 1.0
+
+    def upcoming_silence(self, t, lookahead, thresh=0.15):
+        t = int(t)
+        k = 0
+        while k < lookahead and t + k < self.n and not self.silent[t + k]:
+            k += 1                                  # walk to the drought's start
+        if k >= lookahead or t + k >= self.n:
+            return 0                                # none begins within horizon
+        d = 0
+        while t + k + d < self.n and self.silent[t + k + d]:
+            d += 1                                  # measure its true length
+        return d
