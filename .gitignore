@@ -13,6 +13,12 @@ data/processed/*
 reports/*
 *.parquet
 
+# but DO commit the small curated result set -- a repo with no evidence in it
+# looks like code that has never been run. Keep this directory tiny: the
+# headline tables and a few PNGs, not every run.
+!reports/committed/
+!reports/committed/**
+
 # --- models / logs ---
 *.pt
 *.pth

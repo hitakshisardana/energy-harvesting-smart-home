@@ -1,12 +1,18 @@
-# Phase 1 (dataset + energy simulator). Already present in your Python 3.11 env.
+# Phase 1 (dataset + energy simulator + schedulers).
+#   pip install -r requirements.txt
 numpy>=1.26
 pandas>=2.0
+pyarrow>=14.0          # parquet engine - events_*.parquet / windows_*.parquet
+pyyaml>=6.0            # config/energy.yaml, config/nodes.yaml
 matplotlib>=3.7
 scipy>=1.11
-scikit-learn>=1.3
+scikit-learn>=1.3      # baseline.py f1_score
+pytest>=7.0            # tests/
 
-# Added later:
-#   torch            - Phase 4 LSTM/GRU
-#   paho-mqtt        - Phase 3 Wokwi <-> Python
-#   pulp  (or mip)   - Phase 7 MILP
-#   gymnasium        - Phase 6 RL env (already installed)
+# Phase 3 (Wokwi <-> Python closed loop)
+paho-mqtt>=2.0
+
+# Added later, only when the phase is actually reached:
+#   torch            - LSTM/GRU forecaster (see docs/findings.md before starting)
+#   gymnasium        - RL env
+#   pulp  (or mip)   - MILP

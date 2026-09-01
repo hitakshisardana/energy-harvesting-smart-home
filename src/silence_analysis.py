@@ -232,8 +232,13 @@ def analyse(name: str, freq: str = "15min", seed: int = 7) -> dict:
         "coverage_of_others_silence": round(float(
             (others_silent & counts["furniture"].gt(0)).sum() /
             max(1, others_silent.sum())), 3),
-        "note": "furniture sleep_presence is the only REAL anti-correlated "
-                "source — it harvests while floor/door/ambient are silent",
+        "note": "MEASURED: furniture covers only 13.7% of the windows where "
+                "floor/door/ambient are all silent, and its night and day "
+                "silence medians are identical (45 min). It is NOT the "
+                "anti-correlated night source the original design assumed. "
+                "No real source in hh104 harvests during the others' silence; "
+                "every one is occupancy-coupled. An occupancy-INDEPENDENT "
+                "source (indoor PV) remains the only untested candidate.",
     }
 
     # ---- report ----

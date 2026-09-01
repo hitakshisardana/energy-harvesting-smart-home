@@ -50,6 +50,13 @@ sources stay fully synthetic (allowed by the plan: four physical sources, fifth
 node = second floor instance). `LoungeChair` motion in HH104 is used as a rough
 furniture-presence proxy only.
 
+**Measured correction (was wrong in the first draft of this file):** furniture
+was assumed to be an anti-correlated night source. It is not. It covers only
+13.7 % of the windows where floor/door/ambient are all silent, with identical
+45 min night and day silence medians (`src/silence_analysis.py`). Every real
+source in hh104 is occupancy-coupled, so none of them harvest during the
+silence the others face.
+
 ## Proposed mapping: CASAS zones -> our 5 virtual nodes (using HH104)
 
 | Virtual node | Signal |

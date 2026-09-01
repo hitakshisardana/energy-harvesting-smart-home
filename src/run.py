@@ -45,7 +45,13 @@ def main():
     ap.add_argument("--lookahead", type=int, default=720)
     ap.add_argument("--s2-frac", type=float, default=0.25)
     ap.add_argument("--tune", action="store_true", help="sweep S2 reserve first")
-    ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--seed", type=int, default=7,
+                    help="base seed; --seeds N runs seeds 0..N-1 instead")
+    ap.add_argument("--seeds", type=int, default=5,
+                    help="number of seeds for the headline comparison. The "
+                         "plan mandates >=5 with mean +/- std: critical events "
+                         "are injected at random and a single-run delta is not "
+                         "evidence. Use 1 only for a quick smoke test.")
     ap.add_argument("--debounce", type=float, default=None,
                     help="seconds; gap above which two detections are separate "
                          "visits. Validate per trace with validate_debounce.py "
@@ -127,31 +133,52 @@ def main():
                 lat_s = f"{lat:7.1f}" if np.isfinite(lat) else "    inf"
                 print(f"     frac {f:<5} capture {c:<6.3f} latency {lat_s} min  {note}")
 
+    seeds = list(range(a.seeds)) if a.seeds > 1 else [a.seed]
     rows, traj = [], {}
     for node in nodes:
         for fac in factories(s2_frac[node], a.lookahead):
-            r, soc, res = run_node(node, harvest, events, cfg, fac, a.step,
-                                   seed=a.seed, interrupt_driven=not a.polled)
-            r["source"] = "synthetic" if node == "gym" else "real"
-            rows.append(r)
-            traj[(node, r["scheduler"])] = (soc, res)
-    df = pd.DataFrame(rows)
+            for sd in seeds:
+                r, soc, res = run_node(node, harvest, events, cfg, fac, a.step,
+                                       seed=sd, interrupt_driven=not a.polled)
+                r["source"] = "synthetic" if node == "gym" else "real"
+                r["seed"] = sd
+                rows.append(r)
+                if sd == seeds[0]:          # plot the first seed's trajectory
+                    traj[(node, r["scheduler"])] = (soc, res)
+    raw = pd.DataFrame(rows)
 
-    assert df.balance_err.max() < 1e-6, "energy not conserved"
+    assert raw.balance_err.max() < 1e-6, "energy not conserved"
+
+    # Collapse seeds to mean +/- std. `df` keeps the mean so every table below
+    # reads unchanged; `_sd` carries the spread, which is what tells you whether
+    # a difference between two schedulers is a result or noise.
+    keys = ["node", "scheduler", "source"]
+    num = raw.select_dtypes("number").columns.drop("seed")
+    df = raw.groupby(keys, as_index=False)[list(num)].mean()
+    sd = raw.groupby(keys, as_index=False)[list(num)].std(ddof=1)
 
     outdir = REPORTS / f"sim_{a.trace}"
     outdir.mkdir(parents=True, exist_ok=True)
-    df.to_csv(outdir / "metrics.csv", index=False)
-    (outdir / "run.json").write_text(json.dumps(vars(a) | {"s2_frac": s2_frac}, indent=2))
+    raw.to_csv(outdir / "metrics_raw.csv", index=False)      # every seed
+    df.to_csv(outdir / "metrics.csv", index=False)            # seed means
+    sd.to_csv(outdir / "metrics_std.csv", index=False)        # seed spread
+    (outdir / "run.json").write_text(json.dumps(
+        vars(a) | {"s2_frac": s2_frac, "seeds_used": seeds}, indent=2))
     print("\n=== INFORMATION LATENCY (min) - the real cost of sensing rarely ===")
     print(df[(df.source == "real") & (df.node.isin(alive))]
           .pivot(index="node", columns="scheduler",
                  values="mean_latency_min").round(1).to_string())
 
     real = df[(df.source == "real") & (df.node.isin(alive))]
-    print("\n=== CRITICAL-EVENT CAPTURE DURING SILENCE (primary metric) ===")
+    real_sd = sd[(sd.source == "real") & (sd.node.isin(alive))]
+    print(f"\n=== CRITICAL-EVENT CAPTURE DURING SILENCE (primary metric, "
+          f"mean of {len(seeds)} seed(s)) ===")
     print(real.pivot(index="node", columns="scheduler",
                      values="capture_silence").round(3).to_string())
+    if len(seeds) > 1:
+        print("\n  std across seeds -- a gap smaller than this is NOT a result:")
+        print(real_sd.pivot(index="node", columns="scheduler",
+                            values="capture_silence").round(3).to_string())
     print("\n=== DETECTIONS REPORTED PER DAY (information yield) ===")
     print(real.pivot(index="node", columns="scheduler",
                      values="reported_per_day").round(0).to_string())
