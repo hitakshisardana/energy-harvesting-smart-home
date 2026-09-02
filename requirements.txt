@@ -16,3 +16,7 @@ paho-mqtt>=2.0
 #   torch            - LSTM/GRU forecaster (see docs/findings.md before starting)
 #   gymnasium        - RL env
 #   pulp  (or mip)   - MILP
+
+# Dashboard (dashboard/app.py)
+streamlit>=1.33
+altair>=5.0
