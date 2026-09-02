@@ -20,7 +20,23 @@ python src/oracle_bound.py hh104 --days 20 --seeds 5
 LSTM, transformer — can beat it, so it bounds what the whole forecasting track
 can ever deliver.
 
-Critical-event capture during silence (the primary metric), 20 days, 5 seeds:
+Replicated across **five homes spanning the resident dimension**. Resident
+counts are from the Zenodo record description (15708568), which publishes a
+per-home table -- they are NOT inferable from the testbed prefix, and an
+earlier version of this repo asserted the wrong ones.
+
+| home | residents | days | capture range (S4) | best S4 oracle gain |
+|---|---|---|---|---|
+| hh104 | 1 | 20 | 0.107-0.160 | +0.003 |
+| hh101 | 1 | 20 | 0.035-0.194 | +0.001 |
+| hh107 | 2 | 20 | 0.026-0.212 | +0.002 |
+| mn50 | 2 | 14 | 0.055-0.190 | +0.000 |
+| mn51 | >2 | 20 | 0.074-0.182 | +0.000 |
+
+Capture levels vary by an order of magnitude across these homes; the oracle gap
+does not. Every gain is inside the seed standard deviation.
+
+Detail for hh104 (20 days, 5 seeds):
 
 | node | S1 no forecast | S3 hist | S3 oracle | S4 hist | S4 oracle | seed sd |
 |---|---|---|---|---|---|---|
@@ -48,8 +64,9 @@ here. If a trained model is required as a deliverable, train it against
 that better accuracy did not convert into better scheduling — with this table as
 the evidence. Do not report a scheduling improvement from it.
 
-**Scope.** One trace, one resident, placeholder constants, and a strongly
-diurnal occupancy pattern (`silence_analysis.py` measures p99/median dispersion
+**Scope.** Five homes across 1, 2 and >2 residents, but all are CASAS
+retirement-community or community-dwelling older-adult homes with placeholder
+energy constants and strongly diurnal occupancy (`silence_analysis.py` measures p99/median dispersion
 of 5.3–6.0 on three of four nodes — close to regular, which is exactly where a
 constant or histogram reserve is already near-optimal). A multi-occupant or
 irregular home could differ. Re-run the oracle before assuming otherwise.
@@ -139,6 +156,11 @@ A manufactured 0.11-vs-0.09 win is not.
 
 ## Open items, in priority order
 
+0. **`--pv 0` still times out.** Fixed one O(n^2) pathology in the forecaster
+   (`p_harvest` was called ~1e6 times per node; now precomputed in `fit`, a
+   ~5x speedup that unblocked the multi-resident runs). A second, separate
+   pathology remains in the starved regime -- which is exactly where the
+   feasibility boundary lives, so this blocks the sweep.
 1. **Close the MQTT loop.** `hub.py` is written and selftested; nobody has run
    the Wokwi node. It is a graded criterion and it is not on anyone's calendar.
 2. **`sensitivity.py`** — the sweep described above. This is the contribution.

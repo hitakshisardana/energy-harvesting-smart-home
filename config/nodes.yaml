@@ -13,25 +13,41 @@ nodes: [floor, door, furniture, gym, ambient]
 
 testbeds:
 
-  hh104:                      # primary trace - 61 days, clean
+  # Resident counts are from the Zenodo 15708568 record description.
+  # They are NOT inferable from the prefix. Record them in results.
+
+  hh104:                      # 1 resident. 61 days, clean. primary trace
     floor:     { motion: [Kitchen, LivingRoom] }
     door:      { door:   [OutsideDoor] }
     furniture: { motion: [LoungeChair], motion_during_sleep: [Bedroom] }
     ambient:   { motion: [WorkArea, Bathroom] }
 
-  hh101:                      # 60 days, no LoungeChair/WorkArea zones
+  hh101:                      # 1 resident. 60 days, no LoungeChair/WorkArea
     floor:     { motion: [Kitchen, LivingRoom] }
     door:      { door:   [OutsideDoor] }
     furniture: { motion_during_sleep: [Bedroom] }
     ambient:   { motion: [Bathroom, DiningRoom] }
 
-  mn50:                       # Milan 2019, 15 days
+  hh107:                      # 2 RESIDENTS. 30 days. Same sensor family as
+                              # hh104/hh101, so this is the clean WITHIN-FAMILY
+                              # single-vs-multi resident comparison.
+                              # No LoungeChair zone. Only 22 Sleep labels in 30
+                              # days (hh104 has far more), so the furniture node
+                              # is thin here -- do not read much into it.
+                              # DiningRoom exists here but not in hh104; it is
+                              # put in ambient to match hh101's treatment.
+    floor:     { motion: [Kitchen, LivingRoom] }
+    door:      { door:   [OutsideDoor] }
+    furniture: { motion_during_sleep: [Bedroom] }
+    ambient:   { motion: [WorkArea, Bathroom, DiningRoom] }
+
+  mn50:                       # 2 RESIDENTS. 15 days
     floor:     { motion: [Kitchen, LivingRoom] }
     door:      { door:   [OutsideDoor] }
     furniture: { motion_during_sleep: [Bedroom] }
     ambient:   { motion: [Bathroom, Office, Hall] }
 
-  mn51:                       # Milan 2019, 30 days (has a 36 h gap)
+  mn51:                       # >2 RESIDENTS. 30 days (has a 36 h gap)
     floor:     { motion: [Kitchen, LivingRoom] }
     door:      { door:   [OutsideDoor] }
     furniture: { motion_during_sleep: [Bedroom] }

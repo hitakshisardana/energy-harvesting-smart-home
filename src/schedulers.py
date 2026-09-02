@@ -110,29 +110,36 @@ class SilenceForecaster:
         self.starve = float(starve_mj_per_step)
 
     def fit(self, harvest: np.ndarray):
-        for i in range(len(harvest)):
-            k = i % self.spd
-            self.n[k] += 1
-            self.hit[k] += harvest[i] > self.starve
+        h = np.asarray(harvest)
+        k = np.arange(len(h)) % self.spd
+        self.n = np.bincount(k, minlength=self.spd).astype(float)
+        self.hit = np.bincount(k, weights=(h > self.starve).astype(float),
+                               minlength=self.spd)
+        # p is a pure function of time-of-day slot, so precompute all spd values
+        # once. The scalar version was called ~1e6 times per simulated node
+        # (~90 per upcoming_silence) and dominated runtime; on the busier
+        # multi-resident traces it made a 20-day run take ~10 min instead of ~2.
+        self._p = np.where(self.n == 0, 0.5, self.hit / np.maximum(self.n, 1))
         self._cache.clear()
 
     def p_harvest(self, t):
-        k = int(t) % self.spd
-        return 0.5 if self.n[k] == 0 else self.hit[k] / self.n[k]
+        return float(self._p[int(t) % self.spd])
 
     def upcoming_silence(self, t, lookahead, thresh=0.15):
         """Length (steps) of the next no-harvest run beginning within lookahead."""
         key = (int(t) % self.spd, lookahead)
         if key in self._cache:
             return self._cache[key]
+        p, spd = self._p, self.spd
+        t0 = int(t) % spd
         k = 0
-        while k < lookahead and self.p_harvest(t + k) > thresh:
+        while k < lookahead and p[(t0 + k) % spd] > thresh:
             k += 1
         if k >= lookahead:
             self._cache[key] = 0
             return 0
         d = 0
-        while d < self.spd and self.p_harvest(t + k + d) <= thresh:
+        while d < spd and p[(t0 + k + d) % spd] <= thresh:
             d += 1
         self._cache[key] = d
         return d

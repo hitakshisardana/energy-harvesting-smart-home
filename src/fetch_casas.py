@@ -11,9 +11,26 @@ Each file is a CSV with no header:
     date, time(HH:MM:SS.ffffff), zone/sensor, state(ON|OFF|value), [activity label]
 e.g.  2012-07-20,10:38:54.512364,OutsideDoor,ON,Step_Out="begin"
 
-  hh1xx  = single/1-2 resident apartments, 2012+, motion + OutsideDoor + light
-  mn5x   = Milan, single resident + pet, 2019, motion + door, Sleep labels
-Full testbed list is printed when you run this.
+RESIDENT COUNTS come from the Zenodo record description (record 15708568),
+which publishes a per-home table. Do NOT guess them from the prefix -- an
+earlier version of this docstring claimed "mn5x = single resident + pet",
+which is wrong and would have been repeated in the writeup.
+
+  hh1xx  older adults in a retirement community. 1 resident, EXCEPT
+         hh107 and hh121 which have 2.
+  rw1xx  same setting. 1 resident, except rw104 and rw110 (2).
+  tm0xx  same setting. 1 resident, except tm004/024/027/030/033 (2).
+  ihs    community-dwelling older adults. Mixed: see the Zenodo table --
+         ihs06/08/09/22/25/60/98/100/101/104/115/116/117/121 have 2,
+         and ihs14/31/93/99/109/119/120/123/124/125 have >2.
+  mn     community-dwelling older adults. mn57/77/82/85 have 1;
+         mn50/62/64/79/83/86 have 2; mn33/51/58/59/61/71/73/76 have >2.
+  named  aruba 1, milan 2, tulum 2, navan 1, cairo/paris/laval >2,
+         kyoto10-21 2 (different residents each year).
+
+Resident count is the variable most likely to change our forecasting result,
+so record it alongside every experiment. Full testbed list is printed when you
+run this.
 
 Usage:
     python src/fetch_casas.py                 # curated starter set

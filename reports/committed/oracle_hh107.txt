@@ -1,0 +1,74 @@
+hh107: 28,801 steps @ 60s (20.0 days), pv=None, seeds=5
+
+mJ/day by node:
+floor        1312.7
+furniture     825.9
+ambient      1065.1
+door          829.5
+gym          1097.3
+
+==============================================================================
+CAPTURE DURING SILENCE  (primary metric, mean over 5 seeds)
+==============================================================================
+scheduler S1 reactive S3 forecast reserve        S4 forecast rate       
+forecast         hist                hist oracle             hist oracle
+node                                                                    
+ambient           0.0               0.053  0.057            0.094  0.093
+door              0.0               0.073  0.085            0.096  0.098
+floor             0.0               0.018  0.021            0.026  0.027
+furniture         0.0               0.212  0.212            0.212  0.212
+gym               0.0               0.322  0.326            0.325  0.326
+
+  std across seeds:
+scheduler S1 reactive S3 forecast reserve        S4 forecast rate       
+forecast         hist                hist oracle             hist oracle
+node                                                                    
+ambient           0.0               0.010  0.013            0.025  0.025
+door              0.0               0.024  0.030            0.031  0.029
+floor             0.0               0.011  0.008            0.010  0.011
+furniture         0.0               0.039  0.039            0.039  0.039
+gym               0.0               0.036  0.034            0.035  0.034
+
+==============================================================================
+HEADROOM: what perfect forecasting is worth
+==============================================================================
+  A trained model lands somewhere in [histogram, oracle]. If that
+  interval is inside the seed noise, the model cannot pay for itself.
+
+  node       sched                     hist   oracle    gain  seed sd  verdict
+  floor      S3 forecast reserve      0.018    0.021  +0.003    0.014  NO HEADROOM
+  floor      S4 forecast rate         0.026    0.027  +0.001    0.015  NO HEADROOM
+  furniture  S3 forecast reserve      0.212    0.212  +0.000    0.056  NO HEADROOM
+  furniture  S4 forecast rate         0.212    0.212  +0.000    0.056  NO HEADROOM
+  ambient    S3 forecast reserve      0.053    0.057  +0.004    0.016  NO HEADROOM
+  ambient    S4 forecast rate         0.094    0.093  -0.001    0.035  NO HEADROOM
+  door       S3 forecast reserve      0.073    0.085  +0.013    0.038  NO HEADROOM
+  door       S4 forecast rate         0.096    0.098  +0.002    0.043  NO HEADROOM
+  gym        S3 forecast reserve      0.322    0.326  +0.004    0.050  NO HEADROOM
+  gym        S4 forecast rate         0.325    0.326  +0.001    0.049  NO HEADROOM
+
+==============================================================================
+INFORMATION LATENCY (min) -- the cost side
+==============================================================================
+scheduler S1 reactive S3 forecast reserve        S4 forecast rate       
+forecast         hist                hist oracle             hist oracle
+node                                                                    
+ambient         128.6               211.3  205.7            165.3  168.3
+door            265.4               236.9  225.2            210.3  209.5
+floor            27.5               115.1  118.3            108.5  107.5
+furniture         NaN                 NaN    NaN              NaN    NaN
+gym               0.0                 0.5    0.5              0.5    0.5
+
+==============================================================================
+OUTAGE FRACTION
+==============================================================================
+scheduler S1 reactive S3 forecast reserve        S4 forecast rate       
+forecast         hist                hist oracle             hist oracle
+node                                                                    
+ambient         0.474               0.417  0.416            0.409  0.410
+door            0.560               0.505  0.497            0.490  0.491
+floor           0.420               0.347  0.348            0.343  0.342
+furniture       0.554               0.426  0.426            0.426  0.426
+gym             0.541               0.352  0.348            0.347  0.347
+
+Wrote /home/claude/energy-harvesting-smart-home/reports/oracle_hh107/raw.csv
