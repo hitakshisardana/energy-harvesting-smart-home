@@ -1,5 +1,13 @@
 # Simulator / integration track — full brief for Member 3
 
+> **Status note (kept for history).** This is the original brief. Several items
+> are superseded: the leakage placeholder (see `config/energy.yaml`, section 5, which
+> replaces the 0.1 %/hour figure); the message dataclasses (`src/messages.py` was never
+> written: the schema checks live in `src/hub.py`); and the furniture and door sources
+> (see `docs/findings.md` F3 and F4). For current numbers, read `README.md` and
+> `docs/findings.md`.
+
+
 *Read top to bottom before starting. Self-contained. Pairs with the revised plan
 (`Energy_Harvesting_Smart_Home_Full_Project_Plan.docx`, Sections 7, 13–15, 22–25,
 29, 30) and `config/interface.schema.json`.*
@@ -72,7 +80,7 @@ pings both teammates.
 E[t+1] = clip( E[t] + eta_in * E_harvested[t] - E_task[t] - E_leak[t],  0,  E_max )
 
   eta_in    : input / PMIC conversion efficiency  (0..1, placeholder 0.5)
-  E_leak[t] : supercap self-discharge this step   (placeholder: 0.1 %/hour of E_max)
+  E_leak[t] : supercap leakage + MCU sleep this step  (see energy.yaml section 5; superseded)
   E_task[t] : sum of energy of tasks ACTUALLY executed this step
 ```
 

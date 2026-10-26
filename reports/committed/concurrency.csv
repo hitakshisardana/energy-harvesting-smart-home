@@ -1,0 +1,6 @@
+home,residents,floor_visits_per_day_node,floor_mJ_per_day_node,ambient_mJ_per_day_node,floor_visits_per_day_zone,floor_mJ_per_day_zone,ambient_mJ_per_day_zone,floor_ratio_zone_over_node
+hh104,1,37.8,6313.5,11655.1,70.9,11841.3,12361.5,1.88
+hh101,1,155.2,25912.6,4773.1,173.2,28927.3,5297.5,1.12
+hh107,2,110.8,18497.5,9208.2,151.6,25317.2,14622.9,1.37
+mn50,2,91.8,15334.5,10357.6,129.1,21552.7,13728.2,1.41
+mn51,3,114.9,19189.2,8963.8,155.0,25877.5,8963.8,1.35

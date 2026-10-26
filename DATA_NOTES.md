@@ -63,9 +63,22 @@ silence the others face.
 |---|---|
 | Floor node | `Kitchen` + `LivingRoom` motion ON (high-traffic footstep proxy) |
 | Door node | `OutsideDoor` ON events |
-| Furniture node | `LoungeChair` motion + `Bedroom` motion during `Sleep` labels |
+| Furniture node | `LoungeChair` motion + `Bedroom` motion during `Sleep` labels. Harvests from the compression source (chair and bed), not footsteps |
 | Gym node | synthetic (no CASAS equivalent) |
 | Ambient node | `WorkArea` + `Bathroom` motion (secondary zone) |
 
-This mapping is applied in `src/build_events.py` (next step) and should be
-frozen in Phase 0.
+This mapping is applied in `src/build_events.py` and frozen in
+`config/nodes.yaml`.
+
+## Data coverage (current)
+
+| Source | Data | Enough? |
+|---|---|---|
+| Footsteps (floor, ambient) | 38,000 to 127,000 motion events per home, 15 to 61 days | Yes |
+| Doors | 884 to 3,714 door events per home | Yes for counts; the energy is tiny |
+| Furniture compression | Chair motion in hh104 only (1,942 events); sleep-labelled intervals 732 (hh104), 326 (hh101), 150 (mn50), 118 (mn51), 12 (hh107) | No: thin outside hh104 |
+| Exercise | None. The gym node is synthetic | No real data |
+| Pets | Not recorded. A pet and a person look the same to the sensors | Cannot be separated |
+| Walkers at once | Zones active within 30 s of each other: 16 % to 28 % of motion events. CASAS does not say who is moving | Bracketed by the visit rules, not counted |
+
+Five homes in total, all older-adult or community settings, at most two months each.

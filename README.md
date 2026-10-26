@@ -22,10 +22,17 @@ python src/fetch_casas.py hh104       # ~14 MB out of a 236 MB Zenodo archive
 python src/build_events.py hh104      # raw log -> per-node event stream
 python -m pytest tests -q             # energy-conservation invariants
 
-python src/run.py hh104 --days 20 --seeds 5        # scheduler comparison
+python src/run.py hh104 --days 20 --seeds 5 --pv 0     # scheduler comparison, kinetic only
 python src/oracle_bound.py hh104 --days 20 --seeds 5   # is forecasting worth it?
-python src/hub.py --selftest                        # MQTT decision logic
+python src/sensitivity.py hh104 --pv 0                 # feasibility map (footstep x visits)
+python src/concurrency.py                              # visit-rule bounds, five homes
+python src/neural_forecast.py hh104 hh101 hh107 mn50 mn51   # GRU forecaster (pooled)
+python src/gait_energy.py                              # footstep energy from gait data
+python src/hub.py --selftest                           # MQTT decision logic
 ```
+
+Tests: `python -m pytest tests -q`. Each home needs `fetch_casas.py`,
+`build_events.py`, and `make_windows.py` before the model scripts run.
 
 Runtime: `build_events` ~1 min, `run.py` a few minutes, `oracle_bound` ~3 min.
 Raw and processed data are gitignored — regenerate with the scripts above.
@@ -77,16 +84,18 @@ future; it is an **upper bound**, never a result.
 | 1 | Baseline energy simulator | done, real trace, invariants tested |
 | 2 | Wokwi node firmware | code written, **never verified to compile** |
 | 3 | Wokwi ↔ Python MQTT loop | `hub.py` written + selftested; **loop not closed** |
-| 4 | Forecasting | naive baselines only; LSTM not started (see findings) |
+| 4 | Forecasting | naive baselines, oracle bound (null holds, F1), GRU trained on hh104 and on five homes pooled (mixed, F6); LSTM not started |
 | 5 | Energy forecasting | not started |
 | 6 | RL policy | not started |
 | 7 | MILP | not started, may be dropped (plan §15) |
-| 8 | End-to-end + dashboard | not started |
-| 9 | Physical validation | not started — **all energy constants are placeholders** |
+| 8 | End-to-end + dashboard | dashboard exists (`dashboard/app.py`); end-to-end loop not closed |
+| 9 | Physical validation | not started — footstep energy is derived from gait data (range only, validation partial); the other energy constants are placeholders |
 | 10 | Writeup | not started |
 
 **Critical path right now:** Phase 3 (someone must run the Wokwi node), then the
-parameter sensitivity map, then the writeup. Phases 6–7 are not on it.
+writeup. The feasibility sensitivity map is done for kinetic-only and PV 30 µW
+(`reports/committed/sweep_hh104_pv*.png`), under both visit-rule bounds.
+Phases 6–7 are not on it.
 
 ---
 
@@ -108,13 +117,21 @@ followed so far — all work is on `main`.
 
 ## Two things to know before trusting any number
 
-1. **Every energy constant except the event rates is a placeholder.** They carry
-   `src:` tags in `config/energy.yaml` (`MEASURED` / `DATASHEET` / `DERIVED` /
-   `PLACEHOLDER` / `SWEPT`). Nothing is bench-measured yet, so absolute results
-   are not claimable — only relative comparisons under a stated parameter set,
-   plus sensitivity across the `SWEPT` ranges.
+1. **Only the event rates and the body-mass footstep energy are data-based.**
+   Every other energy constant is a placeholder. They carry `src:` tags in
+   `config/energy.yaml` (`MEASURED` / `DATASHEET` / `DERIVED` / `PLACEHOLDER` /
+   `SWEPT`). Nothing is bench-measured yet, so absolute results are not
+   claimable: only relative comparisons under a stated parameter set, plus
+   sensitivity across the `SWEPT` ranges.
+
+   The energy model uses four kinetic sources: footsteps (floor and ambient),
+   furniture compression (chair and bed), door flybys, and a synthetic exercise
+   session (gym). Only footsteps can carry a node on kinetic energy alone. The
+   furniture and door nodes stay dead under kinetic-only harvest. The number of
+   walkers is bracketed by two visit rules (node: lower bound; zone: upper
+   bound), and pets are not modelled.
 
 2. **The default run leans on indoor PV**, which is out of the project's stated
    scope and untested. With `--pv 0` — the four kinetic sources the project is
-   actually about — three of five nodes are starved and capture is zero. Report
-   both, and never quote the PV-on number alone.
+   actually about — the furniture and door nodes are starved, and only floor and
+   ambient carry signal. Report both, and never quote the PV-on number alone.
