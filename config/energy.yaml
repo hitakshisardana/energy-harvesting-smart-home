@@ -13,11 +13,25 @@
 # `stored_energy_pct` in the MQTT schema is a rendering of e_max_mj, not a unit.
 
 meta:
-  version: 1
+  version: 2
   trace: hh104
   notes: >
     Event rates are measured from data/processed/events_hh104.parquet
     (61 days, 127,840 events). Everything else is placeholder until Phase 1a.
+  changed_in_v2: >
+    Four corrections, all found by reading each note against its own value:
+      1. gym_session 1500 -> 180000 mJ. The value came from a "150 mW for 10 s"
+         hand-crank note but the session is declared as 20 minutes, implying
+         1.25 mW average. The node the file claimed "dominates by 2-3 orders of
+         magnitude" was harvesting about the same as ambient.
+      2. sim.e_init_fraction 0.5 -> 0.0. The key was DEAD (storage.py hardcoded
+         0.5) and a half-full 60,000 mJ cell let a starved node coast ~90 days,
+         reporting capture = 1.000 for a harvester delivering 3.6 mJ/day.
+      3. storage gains C_lithium and a sweep axis, after a capacitance sweep
+         showed supercapacitors have a hard ceiling (see that block).
+      4. door events_per_day energy figure corrected: 3.6 mJ/day, not 7.5.
+    sim.py now returns `sustainable`, `burn_in_days` and `run_long_enough`.
+    Check all three before quoting any number from a run.
 
 # ---------------------------------------------------------------------------
 # 1. THE PARAMETER THAT DECIDES THE PROJECT
@@ -42,6 +56,8 @@ transduction:
       nodes look alive. Events are debounced into visits (see harvesting.py,
       DEBOUNCE_S) before this multiplier is applied.
       MUST appear as a sensitivity axis in every energy result.
+      Visits are built by harvesting.to_visits: by=node is a lower bound on
+      walkers, by=zone an upper bound (see docs/findings.md F5).
 
   debounce_s:
     src: SWEPT
@@ -85,9 +101,24 @@ harvest:
 
   per_event_raw_mj:
     footstep:
-      src: PLACEHOLDER
-      value: 0.60
-      note: piezo disc array, 4 discs. Literature spread is 0.05-2 mJ. MEASURE.
+      # DERIVED, no longer a guess. Body mass is from data; delta and eta are
+      # assumptions and are SWEPT below. Model: src/gait_energy.py.
+      #   F_peak = k * m * g          k = 1.20 MEASURED (Horst et al. 2017 raw trials)
+      #   E_mech = 1/2 * F_peak * delta
+      #   E_elec = E_mech * eta       this is raw piezo output, BEFORE the
+      #                               rectifier x PMIC chain below
+      # Source data: Horst et al. (2017), Gait & Posture 58:476-480, CC BY 4.0,
+      # https://data.mendeley.com/datasets/yrpbd8fhc4/1 (128 subjects, 1278 trials).
+      # Value = population median at delta=2 mm, eta=0.03. Population 5-95%:
+      # 18-32 mJ. Published floor tiles: 11 mJ (<50 kg), 32 mJ (>70 kg).
+      # VALIDATION: range matched; mass ratio NOT matched (model 1.89, published
+      # 2.91). See docs/findings.md. The sweep, not this value, is the result.
+      src: DERIVED
+      value: 25.3
+      note: >
+        Derived as above. Nothing here was bench-measured. If the published tile
+        figures are DELIVERED energy rather than raw piezo output, the model
+        under-predicts by about 3x (rectifier 0.55 x PMIC 0.60).
     compression:
       src: PLACEHOLDER
       value: 0.25
@@ -98,11 +129,36 @@ harvest:
       note: depends on magnet strength, coil turns, door speed.
     gym_session:
       src: PLACEHOLDER
-      value: 1500.0
+      value: 180000.0
       note: >
-        ~150 mW for 10 s from a hand-cranked geared DC motor. Dominates every
-        other source by 2-3 orders of magnitude. Report gym results separately;
-        never let it into an average.
+        150 mW sustained for the full 20-minute session declared in
+        nodes.yaml (0.15 W x 1200 s = 180 J). CORRECTED: this was 1500 mJ,
+        which came from a "~150 mW for 10 s" hand-crank figure that was never
+        reconciled with the 20-minute session length -- it implied 1.25 mW
+        average, less than a nightlight, and made the gym node roughly equal
+        to ambient instead of dominating. If the intended device really is a
+        hand crank, change session_minutes in nodes.yaml instead; the two
+        files must agree.
+        150 mW is conservative for a generator attachment on equipment a
+        person drives at 50-150 W mechanical -- it assumes well under 1%
+        capture. MEASURE before quoting.
+        Consequence to keep in view: one session delivers ~59,400 mJ after
+        efficiency into a 440.6 mJ store, so over 99% overflows and is
+        wasted. The gym node is not storage-limited by its harvest but by
+        its capacitor. Report gym separately; never let it into an average.
+
+  # Inputs to the footstep DERIVED value above (src/gait_energy.py). Assumed,
+  # not measured. Energy is linear in both.
+  tile_deflection_mm:
+    src: SWEPT
+    range: [1, 2, 3]
+    default: 2
+    note: Compliant-surface deflection under a footstep.
+  piezo_coupling:
+    src: SWEPT
+    range: [0.01, 0.02, 0.03, 0.05]
+    default: 0.03
+    note: Fraction of mechanical energy converted to electrical (1-5 % for piezo).
 
   # Occupancy-INDEPENDENT source. Untested, and the most important open
   # question in the design: every real source in hh104 is correlated with
@@ -150,6 +206,10 @@ tasks:
 # ---------------------------------------------------------------------------
 # Usable energy = 0.5 * C * (Vmax^2 - Vmin^2). Vmin is the regulator dropout,
 # NOT zero: charge below it exists but cannot be spent.
+#
+# WHICH OPTION IS SELECTED CHANGES THE PROJECT'S CONCLUSION. Do not switch it
+# without rerunning every experiment and checking the `sustainable` and
+# `run_long_enough` fields sim.py now returns.
 storage:
   selected: A_low_leak
 
@@ -161,7 +221,10 @@ storage:
       v_min_usable: 2.5
       e_max_mj: 440.6
       leak_ua: 1.0
-      note: Smaller and low-leakage. Preferred — see the overhead note below.
+      note: >
+        Smaller and low-leakage. Currently selected because it is the part the
+        design assumed, NOT because it was shown to be best.
+
     B_standard:
       src: PLACEHOLDER
       capacitance_f: 0.10
@@ -170,6 +233,45 @@ storage:
       e_max_mj: 937.5
       leak_ua: 5.0
       note: More reserve, but 5x the leakage. Usually a net loss on weak nodes.
+
+    C_lithium:
+      src: PLACEHOLDER
+      v_max: 5.0
+      e_max_mj: 60000.0
+      leak_ua: 0.0926
+      note: >
+        UNTESTED CANDIDATE, not selected. ~17 mWh rechargeable coin cell.
+        `leak_ua` here is NOT a capacitor leakage current: it is the equivalent
+        current that reproduces ~2 %/month self-discharge (~40 mJ/day) through
+        the same formula the other options use, so storage.py needs no change.
+        Label it as self-discharge, never as leakage, when reporting.
+
+        WHY IT IS HERE. Sweeping supercapacitance found a hard ceiling: leakage
+        scales with C (~21 uA/F implied by option A, ~50 uA/F by option B --
+        these disagree by 2.3x and neither is measured), so a store big enough
+        to hold one 20-minute exercise session (~6.4 F) leaks ~58,800 mJ/day
+        against ~34,000 mJ/day of harvest (4 sessions/week x 59,400 mJ). It consumes more than it captures.
+        At 3.6 F the node captures ~13,000 mJ/day more than at 0.047 F and
+        delivers LESS to tasks (446 vs 512 mJ/day) because ~14,700 mJ/day leaks
+        away. Cell self-discharge scales with stored ENERGY, not capacitance,
+        so it has no such crossover.
+
+        DO NOT ADOPT WITHOUT RESOLVING:
+          1. Cycle life. Four charge bursts a week for years is a duty cycle
+             supercapacitors tolerate and small cells may not. Not modelled.
+          2. Sustainability. A cell removes leakage; it does not create
+             harvest. With leakage gone, standing overhead is still ~285
+             mJ/day of MCU sleep, and floor (113.6 mJ/day at the old 0.6 mJ placeholder, pv=0) still does
+             not break even. Only gym, at ~34,000 mJ/day, clearly does.
+          3. The earlier result showing capture = 1.000 for every node on this
+             option was an ARTIFACT of e_init_fraction = 0.5, i.e. 30,000 mJ
+             of free starting charge. Fixed; see sim.e_init_fraction below.
+
+  # Sweep the capacity axis rather than picking a value. See F5 in
+  # docs/findings.md: for a bursty source, storage and not harvest is binding.
+  sweep_e_max_mj:
+    src: SWEPT
+    range: [440.6, 937.5, 4688, 18750, 60000]
 
 # ---------------------------------------------------------------------------
 # 5. STANDING OVERHEAD — runs 24/7 whether or not the node ever senses
@@ -237,9 +339,15 @@ nodes:
     frac_time_silent: 0.668
     silence_p99_over_median: 5.33
     note: >
-      Covers only 13.7 % of the windows where floor/door/ambient are all
-      silent, with identical 45 min night and day medians. It is NOT the
-      anti-correlated night source DATA_NOTES.md implies. Correct that file.
+      Harvests from the COMPRESSION source only: lounge-chair motion and
+      bedroom sleep presence. Chair-motion events were previously harvested as
+      footsteps, which inflated furniture to ~3,100 mJ/day. Under the
+      compression source it is ~7.6 mJ/day against 717 mJ/day of overhead:
+      DEAD. Chair motion covers 13.7 % of the windows where floor/door/ambient
+      are all silent, so furniture is not the anti-correlated night source the
+      original design assumed.
+      DATA_NOTES.md and silence_analysis.py have both been corrected; do not
+      let the old claim back in from the plan document.
 
   door:
     src: MEASURED
@@ -248,10 +356,15 @@ nodes:
     frac_time_silent: 0.759
     silence_p99_over_median: 6.0
     note: >
-      DEAD ON REAL DATA. ~7.5 mJ/day at placeholder conversion, against 717
-      mJ/day of overhead — a ~96x shortfall, and no transduction multiplier
-      applies to door flybys. Re-scope as a transient, unpowered,
-      event-triggered reporter with no store and no sleep current.
+      DEAD ON REAL DATA. 6.4 mJ/day measured at placeholder conversion
+      (door openings are not debounced: each is one magnet flyby), against
+      717 mJ/day of overhead — a ~110x shortfall.
+      No transduction multiplier applies to door flybys, so unlike the motion
+      nodes it cannot be rescued by assuming more steps per visit. Neither
+      storage option helps: at 55 days with an empty start it is in outage
+      100 % of the time on both. Re-scope as a transient, unpowered,
+      event-triggered reporter with no store and no sleep current, or drop it.
+      A starved node measures starvation, not policy — run.py excludes it.
 
   gym:
     src: SYNTHETIC
@@ -264,6 +377,13 @@ nodes:
       sessions) — do not quote them. Adding gym changes coverage silence by
       0.000 across four seeds, because every gym-active window is already
       covered by a real node. Report gym only as a labelled ablation.
+      CAPACITOR-LIMITED, NOT HARVEST-LIMITED. At the corrected session energy
+      it harvests ~34,000 mJ/day and discards 96 % of it: one session delivers
+      ~59,400 mJ after efficiency into a 440.6 mJ store. On the supercapacitor
+      it still sits in outage 85 % of the time, because the energy arrives in
+      four bursts a week and cannot be carried to the days between. On
+      C_lithium the same node reaches 1.000 capture and 1 % outage. It is the
+      only node for which the storage choice is the binding constraint.
 
 # ---------------------------------------------------------------------------
 # 7. SIMULATOR
@@ -277,7 +397,20 @@ sim:
       M2 forecasts at 15 min; the simulator steps at 60 s — 15x finer. Write
       down how a coarse forecast maps onto fine-grained decisions BEFORE
       building the RL environment around it.
-  e_init_fraction: {src: PLACEHOLDER, value: 0.5, note: identical across all schedulers compared}
+  e_init_fraction:
+    src: PLACEHOLDER
+    value: 0.0
+    note: >
+      Fraction of capacity the node starts with. 0.0 = a freshly installed node
+      that has not harvested anything yet.
+      WAS 0.5, and was DEAD -- storage.py hardcoded 0.5 and never read this key.
+      Harmless for a 440 mJ supercapacitor, fatal for a 60,000 mJ cell: the node
+      began with 30,000 mJ of free energy and coasted ~90 days, so a 20-day run
+      reported capture = 1.000 for a door node harvesting 6.4 mJ/day against
+      ~325 mJ/day of overhead. The same node over 55 days gives 0.232 capture
+      and 62 % outage. sim.py now reads this key and returns `sustainable`,
+      `burn_in_days` and `run_long_enough` so the trap is visible in the output.
+      Identical across all schedulers compared.
   seeds: {src: PLACEHOLDER, value: 5, note: report mean +/- std; single runs are not evidence}
   primary_metric:
     value: critical_event_capture_rate_during_silence

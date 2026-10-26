@@ -50,10 +50,33 @@ class Storage:
 
     def __post_init__(self):
         if self.e is None:
-            self.e = 0.5 * self.e_max_mj
+            # Start EMPTY, not half-full. A node that has just been installed
+            # has not harvested anything yet.
+            #
+            # This used to be 0.5 * e_max, which is harmless for a 440 mJ
+            # supercapacitor (220 mJ, a few hours of overhead) but silently
+            # invalidates any large-storage experiment: with a 60,000 mJ cell
+            # the node begins with 30,000 mJ of free energy and can run for
+            # ~90 days on it. A 20-day simulation then reports capture = 1.000
+            # for a node harvesting 6.4 mJ/day against 325 mJ/day of overhead
+            # -- the battery discharging, not the harvester working. At 55 days
+            # the same node collapses to 0.232 capture and 62% outage.
+            #
+            # If you deliberately want a pre-charged node, pass e= explicitly
+            # and say so in the result.
+            self.e = 0.0
         self.overhead_per_step = (
             (self.leak_mj_per_day + self.sleep_mj_per_day) * self.timestep_s / 86400.0
         )
+
+    def sustainable_over(self, harvest_mj_per_day: float) -> bool:
+        """Does daily harvest cover standing overhead?
+
+        If this is False the node is running down its initial charge and any
+        metric from a run shorter than (initial energy / daily deficit) is an
+        artifact. Check it before quoting a result.
+        """
+        return harvest_mj_per_day >= self.leak_mj_per_day + self.sleep_mj_per_day    
 
     # --- queries -----------------------------------------------------------
     def can_afford(self, cost: float, reserve: float = 0.0) -> bool:

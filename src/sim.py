@@ -3,6 +3,11 @@ The closed loop: harvest -> store -> scheduler -> tasks -> metrics.
 
 Primary metric is critical-event capture DURING SILENCE. Everything else is
 reported but not optimised against.
+
+Before quoting any result from this module, check two fields it returns:
+`sustainable` and `run_long_enough`. A node whose harvest does not cover its
+standing overhead is running down whatever charge it started with, and its
+metrics describe that charge rather than the harvester. See initial_energy().
 """
 from __future__ import annotations
 
@@ -18,6 +23,26 @@ def task_costs(cfg):
     return {"sense": val(t["occ_sense_mj"]),
             "tx": val(t["tx_espnow_mj"]),
             "alarm": val(t["alarm_mj"]) + val(t["tx_espnow_mj"])}
+
+
+def initial_energy(cfg, e_max_mj: float) -> float:
+    """Starting charge, from sim.e_init_fraction in energy.yaml.
+
+    This used to be hardcoded at 0.5 * e_max inside Storage, and the config key
+    was dead. Harmless for a 440 mJ supercapacitor (220 mJ is a few hours of
+    overhead) but it silently invalidates any large-storage experiment: with a
+    60,000 mJ cell the node begins with 30,000 mJ of free energy and coasts for
+    roughly 90 days. A 20-day run then reports capture = 1.000 for a door node
+    harvesting 6.4 mJ/day against ~325 mJ/day of overhead -- that is the cell
+    discharging, not the harvester working. The same node over 55 days collapses
+    to 0.232 capture and 62 % outage.
+
+    Default is 0.0: a node that was just installed has not harvested anything.
+    Set the fraction deliberately if you want a pre-charged node, and say so
+    when reporting.
+    """
+    node = cfg.get("sim", {}).get("e_init_fraction", {"value": 0.0})
+    return float(val(node)) * e_max_mj
 
 
 def run_node(node, harvest, events, cfg, sched_factory, timestep_s,
@@ -38,6 +63,7 @@ def run_node(node, harvest, events, cfg, sched_factory, timestep_s,
     spd = int(86400 / timestep_s)
 
     store = storage_from_config(cfg, timestep_s)
+    store.e = initial_energy(cfg, store.e_max_mj)
     e_init = store.e
     costs = task_costs(cfg)
 
@@ -111,7 +137,27 @@ def run_node(node, harvest, events, cfg, sched_factory, timestep_s,
         store.apply_overhead()
         soc_log[t] = store.soc
 
-    days = (n - warm) * timestep_s / 86400
+    # Two windows, deliberately distinct. Rates that describe SCHEDULER
+    # behaviour are counted after warmup, because the forecaster is still
+    # being fitted before that. Storage totals (wasted, outage) accumulate
+    # from step 0, so they must be divided by the FULL span -- dividing them
+    # by the post-warmup span inflated wasted_mj_per_day by 1/(1-warmup_frac)
+    # and produced the impossible result that a node wasted more than it
+    # harvested.
+    days = (n - warm) * timestep_s / 86400          # post-warmup, for rates
+    days_all = n * timestep_s / 86400               # full span, for totals
+
+    # --- is this result meaningful at all? ---------------------------------
+    # A node only sustains itself if daily harvest covers standing overhead.
+    # If it does not, it is spending its initial charge, and any run shorter
+    # than the time needed to exhaust that charge measures the store rather
+    # than the harvester. `burn_in_days` is how long the initial charge alone
+    # would last at the current deficit; a run should be comfortably longer.
+    harvest_per_day = float(h.sum()) / max(days_all, 1e-9)
+    overhead_per_day = store.overhead_per_step * 86400.0 / timestep_s
+    deficit = overhead_per_day - harvest_per_day
+    burn_in_days = (e_init / deficit) if (deficit > 0 and e_init > 0) else 0.0
+
     return {
         "node": node, "scheduler": sched.name,
         "capture_silence": m["crit_sil_cap"] / max(1, m["crit_sil"]),
@@ -122,6 +168,19 @@ def run_node(node, harvest, events, cfg, sched_factory, timestep_s,
         "mean_latency_min": (np.mean(m["lat"]) * timestep_s / 60) if m["lat"] else np.nan,
         "mean_soc": float(soc_log[warm:].mean()),
         "outage_frac": store.outage_steps / n,
-        "wasted_mj_per_day": store.wasted / max(days, 1e-9),
+        "wasted_mj_per_day": store.wasted / max(days_all, 1e-9),
+        # Report the ledger split, not just what was captured. Energy that
+        # enters the store and then leaks away is not useful, and summing the
+        # two makes a leakier store look better than it is: a 3.6 F capacitor
+        # captures ~13,000 mJ/day more than a 0.047 F one yet delivers LESS to
+        # tasks (446 vs 512 mJ/day), because ~14,700 mJ/day leaks straight out.
+        # `spent` is the only column that does any work.
+        "leaked_mj_per_day": store.leaked / max(days_all, 1e-9),
+        "spent_mj_per_day": store.spent / max(days_all, 1e-9),
+        "harvest_mj_per_day": harvest_per_day,
+        "overhead_mj_per_day": overhead_per_day,
+        "sustainable": bool(harvest_per_day >= overhead_per_day),
+        "burn_in_days": burn_in_days,
+        "run_long_enough": bool(days_all >= 2 * burn_in_days),
         "balance_err": store.balance_error(e_init),
     }, soc_log, res_log

@@ -57,11 +57,14 @@ def main():
                     help="critical events are injected at random; a single "
                          "seed cannot distinguish a result from noise")
     ap.add_argument("--debounce", type=float, default=None)
+    ap.add_argument("--visit", choices=["node", "zone"], default="node",
+                    help="visit rule: node = lower bound on walkers, zone = upper bound")
     a = ap.parse_args()
 
     cfg = load_config()
     harvest, events, grid = build_harvest(a.trace, cfg, a.step, a.mult, a.pv,
-                                          7, a.days, a.debounce or DEBOUNCE_S)
+                                          7, a.days, a.debounce or DEBOUNCE_S,
+                                          False, a.visit)
     nodes = REAL_NODES + ["gym"]
 
     per_day = harvest.sum() / (len(grid) * a.step / 86400)
@@ -89,7 +92,8 @@ def main():
                              **{k: r[k] for k in METRICS}})
     df = pd.DataFrame(rows)
 
-    outdir = REPORTS / f"oracle_{a.trace}"
+    outdir = REPORTS / (f"oracle_{a.trace}" if a.visit == "node"
+                        else f"oracle_{a.trace}_visit{a.visit}")
     outdir.mkdir(parents=True, exist_ok=True)
     df.to_csv(outdir / "raw.csv", index=False)
 

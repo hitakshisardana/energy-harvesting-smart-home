@@ -40,13 +40,25 @@ REAL_NODES = ["floor", "furniture", "ambient", "door"]
 # property of people; "footsteps per detection" is a property of sensor
 # firmware. Only the first is physically meaningful.
 DEBOUNCE_S = 60.0
-# which transduction multiplier applies to which event type
-MULT_KEY = {"motion": "footsteps_per_visit",
-            "sleep_presence": "compressions_per_furniture_event",
-            "door": "flybys_per_door_event"}
-RAW_KEY = {"motion": "footstep",
-           "sleep_presence": "compression",
-           "door": "door_flyby"}
+# The four kinetic sources. Every event harvests from exactly one of them.
+#   footstep     floor and ambient motion (people walking)
+#   compression  furniture: lounge-chair motion and bedroom sleep presence
+#   door         door openings: one magnet flyby per event, not debounced
+#   exercise     synthetic gym sessions (see synth_gym_counts)
+SOURCES = ("footstep", "compression", "door")
+SOURCE_RAW = {"footstep": "footstep", "compression": "compression", "door": "door_flyby"}
+SOURCE_MULT = {"footstep": "footsteps_per_visit",
+               "compression": "compressions_per_furniture_event",
+               "door": "flybys_per_door_event"}
+
+
+def source_of(node: str, etype: str) -> str:
+    """Which kinetic source an event harvests from."""
+    if etype == "door":
+        return "door"
+    if etype == "sleep_presence" or (node == "furniture" and etype == "motion"):
+        return "compression"
+    return "footstep"
 
 
 def synth_gym_counts(grid, occupancy, timestep_s, cfg, seed=7):
@@ -71,13 +83,28 @@ def synth_gym_counts(grid, occupancy, timestep_s, cfg, seed=7):
     return counts
 
 
-def to_visits(ev: pd.DataFrame, debounce_s: float = DEBOUNCE_S) -> pd.DataFrame:
-    """Collapse sensor re-triggers into discrete visits, per node."""
+def to_visits(ev: pd.DataFrame, debounce_s: float = DEBOUNCE_S,
+              by: str = "node") -> pd.DataFrame:
+    """
+    Collapse sensor re-triggers into discrete visits.
+
+    by="node": one stream per node, so the zones of a node are merged. Two
+               people in different rooms of the same node count as one visit.
+               LOWER bound on concurrent walkers.
+    by="zone": one stream per zone, so overlapping rooms count as separate
+               visits. UPPER bound: one person moving between two rooms within
+               the debounce window is also counted twice.
+
+    Door openings are never merged: each one is a single magnet flyby.
+    """
+    if by not in ("node", "zone"):
+        raise ValueError(f"by must be 'node' or 'zone', got {by!r}")
+    keys = ["node_id"] if by == "node" else ["node_id", "zone"]
     out = []
-    for node, g in ev.groupby("node_id", sort=False):
+    for _, g in ev.groupby(keys, sort=False):
         g = g.sort_values("ts")
         gap = g.ts.diff().dt.total_seconds().fillna(1e9)
-        out.append(g[gap > debounce_s])
+        out.append(g[(gap > debounce_s) | (g.event_type == "door")])
     return pd.concat(out).sort_values("ts") if out else ev.iloc[:0]
 
 
@@ -86,7 +113,8 @@ def build_harvest(trace: str, cfg: dict, timestep_s: float = 60,
                   pv_uw: float | None = None,
                   seed: int = 7, days: float | None = None,
                   debounce_s: float = DEBOUNCE_S,
-                  raw_events: bool = False):
+                  raw_events: bool = False,
+                  visit_by: str = "node"):
     """
     Returns (harvest_mj, events, index):
       harvest_mj : DataFrame  [step x node]  mJ arriving this step
@@ -99,7 +127,7 @@ def build_harvest(trace: str, cfg: dict, timestep_s: float = 60,
     ev_raw = pd.read_parquet(path)
     # Tier-0 detections the hub can receive are still per RAW event; the
     # HARVEST is per visit. Keep the two streams separate.
-    ev = ev_raw if raw_events else to_visits(ev_raw, debounce_s)
+    ev = ev_raw if raw_events else to_visits(ev_raw, debounce_s, visit_by)
 
     freq = pd.Timedelta(seconds=timestep_s)
     ev["w"] = ev.ts.dt.floor(freq)
@@ -114,8 +142,8 @@ def build_harvest(trace: str, cfg: dict, timestep_s: float = 60,
     if pv_uw is None:
         pv_uw = val(hv["indoor_pv_uw"])
 
-    mults = {"motion": footstep_mult,   # per VISIT
-             "sleep_presence": val(tr["compressions_per_furniture_event"]),
+    mults = {"footstep": footstep_mult,   # per VISIT
+             "compression": val(tr["compressions_per_furniture_event"]),
              "door": val(tr["flybys_per_door_event"])}
 
     events = pd.DataFrame(0.0, index=grid, columns=REAL_NODES + ["gym"])
@@ -126,8 +154,9 @@ def build_harvest(trace: str, cfg: dict, timestep_s: float = 60,
         if w not in harvest.index or node not in REAL_NODES:
             continue
         events.at[w, node] += n
-        raw = val(hv["per_event_raw_mj"][RAW_KEY[etype]])
-        harvest.at[w, node] += n * mults[etype] * raw * eff
+        src = source_of(node, etype)
+        raw = val(hv["per_event_raw_mj"][SOURCE_RAW[src]])
+        harvest.at[w, node] += n * mults[src] * raw * eff
 
     # --- synthetic gym, conditioned on real occupancy ---
     occ = (events[REAL_NODES].sum(axis=1) > 0).astype(float)

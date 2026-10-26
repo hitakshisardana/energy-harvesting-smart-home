@@ -13,7 +13,7 @@ pytest>=7.0            # tests/
 paho-mqtt>=2.0
 
 # Added later, only when the phase is actually reached:
-#   torch            - LSTM/GRU forecaster (see docs/findings.md before starting)
+torch>=2.0            # GRU forecaster, src/neural_forecast.py (findings F6)
 #   gymnasium        - RL env
 #   pulp  (or mip)   - MILP
 

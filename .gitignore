@@ -36,3 +36,6 @@ Thumbs.db
 
 # keep folder placeholders
 !**/.gitkeep
+
+# --- gait kinetics dataset (Horst 2017, ~500 MB; fetched manually, not committed) ---
+gait/

@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EHSH node: interactive 3D hardware model</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#0d1117;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#e6edf3}
+  #scene{position:fixed;inset:0}
+  .panel{position:fixed;background:rgba(22,27,34,.93);border:1px solid #30363d;border-radius:10px;padding:12px 14px;font-size:13px;box-shadow:0 4px 18px rgba(0,0,0,.4);z-index:5;box-sizing:border-box}
+  #controls{top:12px;left:12px;width:280px}
+  #info{top:12px;right:12px;width:320px;max-height:42vh;overflow:auto}
+  #stats{bottom:12px;right:12px;width:320px;max-height:44vh;overflow:auto}
+  #legend{bottom:12px;left:12px;font-size:12px;line-height:1.7}
+  h1{font-size:15px;margin:0 0 6px}
+  h2{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#8b949e;margin:12px 0 6px}
+  button{background:#21262d;color:#e6edf3;border:1px solid #30363d;border-radius:6px;padding:5px 9px;cursor:pointer;margin:2px 4px 2px 0;font-size:12px}
+  button:hover{border-color:#58a6ff}
+  input[type=range]{width:100%;margin:4px 0 8px}
+  .row{display:flex;justify-content:space-between;align-items:center;margin:3px 0}
+  .muted{color:#8b949e}
+  .tag{display:inline-block;font-size:10px;padding:1px 7px;border-radius:9px;margin:2px 0 6px}
+  .tag.wokwi{background:#1f6feb33;color:#79c0ff}
+  .tag.design{background:#d2992233;color:#e3b341}
+  .lbl{background:rgba(13,17,23,.88);border:1px solid #30363d;border-radius:5px;padding:2px 6px;font-size:11px;white-space:nowrap;color:#e6edf3;pointer-events:none}
+  .sw{display:inline-block;width:18px;height:4px;vertical-align:middle;margin-right:7px;border-radius:2px}
+  #log{font-family:ui-monospace,Menlo,monospace;font-size:11px;max-height:130px;overflow:auto;color:#8b949e;margin-top:4px;white-space:pre-line}
+  canvas#spark{width:100%;height:64px;background:#0d1117;border-radius:6px;display:block;margin-top:4px}
+  .big{font-size:20px;font-weight:600}
+  .bar{height:8px;background:#21262d;border-radius:4px;overflow:hidden;margin:4px 0}
+  .bar div{height:100%;background:#3fb950;width:0%}
+  p{margin:6px 0;line-height:1.45}
+</style>
+</head>
+<body>
+
+<div id="scene"></div>
+
+<div id="controls" class="panel">
+  <h1>EHSH energy-harvesting node</h1>
+  <div class="muted" style="font-size:12px">Drag to orbit · scroll to zoom · click any part for details</div>
+
+  <h2>Simulation</h2>
+  <div>
+    <button id="play">Pause</button>
+    <button id="footstep">Footstep now</button>
+    <button id="precharge">Pre-charge 50%</button>
+    <button id="reset">Reset</button>
+  </div>
+  <div class="row"><span>Sim speed</span><span id="speedv">20×</span></div>
+  <input id="speed" type="range" min="1" max="120" value="20">
+  <div class="row"><span>Foot traffic</span><span id="trafficv">6 / min</span></div>
+  <input id="traffic" type="range" min="0" max="30" value="6">
+  <div class="row"><span>Sunlight (indoor PV)</span><button id="sun">Off</button></div>
+  <div class="row"><span>Door openings / hour</span><span id="doorv">4</span></div>
+  <input id="doors" type="range" min="0" max="20" value="4">
+  <div class="row"><span>Chair / bed sits / hour</span><span id="sitv">6</span></div>
+  <input id="sits" type="range" min="0" max="20" value="6">
+  <div class="row"><span>Exercise sessions / day</span><span id="gymv">4</span></div>
+  <input id="gyms" type="range" min="0" max="8" value="4">
+  <div class="row"><span>Part labels</span><button id="labels">On</button></div>
+  <p class="muted" style="font-size:11px">Starts empty, as in <code>energy.yaml</code> (e_init_fraction 0.0). Overhead runs at 717 mJ/day all the time.</p>
+</div>
+
+<div id="info" class="panel">
+  <h1>Part details</h1>
+  <div class="muted">Click a part in the 3D view.</div>
+</div>
+
+<div id="stats" class="panel">
+  <div class="row"><span class="big" id="soc">0%</span><span id="mode" class="big">CRITICAL</span></div>
+  <div class="bar"><div id="socbar"></div></div>
+  <div class="row"><span class="muted">Sense interval</span><span id="interval">none</span></div>
+  <div class="row"><span class="muted">Sim clock</span><span id="clock">d0 00:00:00</span></div>
+  <canvas id="spark" width="600" height="128"></canvas>
+  <div class="muted" style="font-size:11px">Lines: 70 % HIGH, 40 % MEDIUM, 15 % LOW</div>
+  <h2>Counters</h2>
+  <div class="row"><span>Footsteps</span><span id="foots">0</span></div>
+  <div class="row"><span>Door openings</span><span id="doors_n">0</span></div>
+  <div class="row"><span>Chair / bed sits</span><span id="sits_n">0</span></div>
+  <div class="row"><span>Exercise sessions</span><span id="gyms_n">0</span></div>
+  <div class="row"><span>Sensing rounds</span><span id="senses">0</span></div>
+  <div class="row"><span>Deferred (not enough energy)</span><span id="deferred">0</span></div>
+  <div class="row"><span>Harvested</span><span id="harv">0 mJ</span></div>
+  <div class="row"><span>Spent on tasks</span><span id="spent">0 mJ</span></div>
+  <div class="row"><span>Standing overhead</span><span id="ovh">0 mJ</span></div>
+  <div class="row"><span>Overflow wasted</span><span id="wasted">0 mJ</span></div>
+  <div class="row"><span>Time critical (no sensing)</span><span id="crit">0 s</span></div>
+  <h2>Event log</h2>
+  <div id="log"></div>
+</div>
+
+<div id="legend" class="panel">
+  <div><span class="sw" style="background:#f2cc60"></span>Energy from the four kinetic sources and light (→ rectifier → PMIC → store)</div>
+  <div><span class="sw" style="background:#f0883e"></span>Power to node</div>
+  <div><span class="sw" style="background:#39d0d8"></span>Sensor data into MCU</div>
+  <div><span class="sw" style="background:#db61a2"></span>Radio: node → gateway → broker → hub</div>
+  <div><span class="sw" style="background:#3fb950"></span>Schedule command: hub → broker → gateway → node</div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// ---------------------------------------------------------------- constants
+// Values from config/energy.yaml (A_low_leak) and firmware/node.ino.
+const E_MAX = 440.6;                  // mJ usable store (0.047 F, 5.0 V to 2.5 V)
+const OVERHEAD_PER_S = 717 / 86400;   // mJ/s: leakage 432 + MCU sleep 285, per day
+const FOOT_MJ = 25.3 * 0.55 * 0.60;   // raw piezo x rectifier x PMIC = 8.4 mJ into store
+const DOOR_MJ = 0.40 * 0.55 * 0.60;   // door flyby: raw 0.40 mJ x rectifier x PMIC
+const COMP_MJ = 2 * 0.25 * 0.55 * 0.60; // sit: 2 compressions x raw 0.25 mJ x chain
+const GYM_MJ = 180000 * 0.55 * 0.60;  // one 20-min exercise session after the chain
+const GYM_S = 1200;                   // session length in simulated seconds
+const PV_MJ_PER_S = 0.03;             // 30 uW indoor PV at peak daylight, added directly as in harvesting.py
+const COST_SENSE = 3.894 + 2.442;     // occupancy + environment sense (mJ)
+const COST_TX = 7.755;                // one ESP-NOW packet (mJ)
+const LADDER = [[70, 'HIGH', 5], [40, 'MEDIUM', 20], [15, 'LOW', 60]];   // firmware modeFromSoc()
+
+function modeFor(pct) {
+  for (const [th, name, iv] of LADDER) if (pct >= th) return { name, iv };
+  return { name: 'CRITICAL', iv: null };
+}
+
+// ---------------------------------------------------------------- state
+function freshState() {
+  return {
+    E: 0, t: 0, nextSense: 0, waiting: false,
+    mode: 'CRITICAL', interval: null,
+    senses: 0, deferred: 0, foots: 0, doors: 0, sits: 0, gyms: 0, gymLeft: 0,
+    harvested: 0, spent: 0, overhead: 0, wasted: 0, crit: 0,
+    sun: false, traffic: 6, paused: false, speed: 20,
+    doorRate: 4, sitRate: 6, gymRate: 4,
+    hist: [], lastEvent: 'none yet',
+  };
+}
+let S = freshState();
+const pct = () => S.E / E_MAX * 100;
+
+function log(msg) {
+  const h = Math.floor(S.t / 3600) % 24, m = Math.floor(S.t / 60) % 60, s = S.t % 60;
+  logLines.unshift(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}  ${msg}`);
+  if (logLines.length > 12) logLines.length = 12;
+}
+const logLines = [];
+
+function add(mJ) {
+  S.harvested += mJ;
+  const room = E_MAX - S.E;
+  if (mJ > room) { S.wasted += mJ - room; S.E = E_MAX; }
+  else S.E += mJ;
+}
+function spend(mJ, kind) {
+  const a = Math.min(mJ, S.E);
+  S.E -= a;
+  if (kind === 'overhead') S.overhead += a; else S.spent += a;
+}
+
+function footstep() {
+  S.foots++;
+  add(FOOT_MJ);
+  S.lastEvent = `footstep +${FOOT_MJ.toFixed(1)} mJ`;
+  trigger('pir'); trigger('harvest');
+}
+
+function doorOpen() {
+  S.doors++;
+  add(DOOR_MJ);
+  S.lastEvent = `door opening +${DOOR_MJ.toFixed(2)} mJ`;
+  trigger('door');
+}
+function sit() {
+  S.sits++;
+  add(COMP_MJ);
+  S.lastEvent = `chair/bed +${COMP_MJ.toFixed(2)} mJ`;
+  trigger('comp');
+}
+function startGym() {
+  S.gyms++;
+  S.gymLeft = GYM_S;
+  S.lastEvent = 'exercise session started';
+  log('exercise session started');
+  trigger('gym');
+}
+
+// Daylight shape from harvesting.py: a 12 h sine from 06:00 to 18:00, zero at night.
+function daylight(t) {
+  const h = (t % 86400) / 3600;
+  return h >= 6 && h <= 18 ? Math.sin(Math.PI * (h - 6) / 12) : 0;
+}
+
+// One simulated second of the node. Same rules as the Python model:
+// harvest in, standing overhead out, mode from SoC, sense when due and affordable.
+function simStep() {
+  S.t += 1;
+  if (S.sun) {
+    const f = daylight(S.t);
+    add(PV_MJ_PER_S * f);
+    if (f > 0 && Math.random() < 0.05 * f) trigger('pv');
+  }
+  if (Math.random() < S.traffic / 60) footstep();
+  if (Math.random() < S.doorRate / 3600) doorOpen();
+  if (Math.random() < S.sitRate / 3600) sit();
+  if (Math.random() < S.gymRate / 86400) startGym();
+  if (S.gymLeft > 0) {
+    add(GYM_MJ / GYM_S);
+    S.gymLeft--;
+    if (S.gymLeft % 60 === 0) trigger('gym');
+  }
+  spend(OVERHEAD_PER_S, 'overhead');
+
+  const m = modeFor(pct());
+  if (m.name !== S.mode) {
+    S.mode = m.name;
+    log(`mode → ${m.name}`);
+    trigger('sched_hub'); trigger('sched_broker', 600);
+    trigger('sched_gw', 1200); trigger('sched_node', 1800);
+  }
+  S.interval = m.iv;
+
+  if (m.iv === null) {
+    S.crit++;
+  } else if (S.t >= S.nextSense) {
+    if (S.E >= COST_SENSE + COST_TX) {
+      spend(COST_SENSE, 'sense'); spend(COST_TX, 'tx');
+      S.senses++; S.waiting = false; S.nextSense = S.t + m.iv;
+      S.lastEvent = `sense (${m.name})`;
+      log(`sense round, ${m.name}, store ${pct().toFixed(0)}%`);
+      trigger('power'); trigger('soc'); trigger('dht');
+      trigger('tx_node'); trigger('tx_gw', 500); trigger('tx_broker', 1000);
+    } else if (!S.waiting) {
+      S.waiting = true; S.deferred++;
+      log('sense deferred: not enough energy');
+    }
+  }
+  if (S.t % 60 === 0) {
+    S.hist.push(pct());
+    if (S.hist.length > 600) S.hist.shift();
+  }
+}
+
+// ---------------------------------------------------------------- three.js
+const host = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(devicePixelRatio);
+renderer.setSize(innerWidth, innerHeight);
+host.appendChild(renderer.domElement);
+
+const css = new CSS2DRenderer();
+css.setSize(innerWidth, innerHeight);
+css.domElement.style.position = 'fixed';
+css.domElement.style.inset = '0';
+css.domElement.style.pointerEvents = 'none';
+host.appendChild(css.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d1117);
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 200);
+camera.position.set(12, 10, 20);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(1.2, 1.2, 0.5);
+controls.enableDamping = true;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 1.0));
+const sunLight = new THREE.DirectionalLight(0xffffff, 0.9);
+sunLight.position.set(6, 12, 8);
+scene.add(sunLight);
+scene.add(new THREE.GridHelper(40, 40, 0x30363d, 0x21262d));
+
+const MAT = {
+  tile:   new THREE.MeshStandardMaterial({ color: 0x6e7681, roughness: .9 }),
+  piezo:  new THREE.MeshStandardMaterial({ color: 0x8b9bd6, metalness: .3, roughness: .5 }),
+  ic:     new THREE.MeshStandardMaterial({ color: 0x2b2f36, roughness: .5 }),
+  pcb:    new THREE.MeshStandardMaterial({ color: 0x1e6b3a, roughness: .7 }),
+  cap:    new THREE.MeshStandardMaterial({ color: 0x2d6cdf, roughness: .4 }),
+  pv:     new THREE.MeshStandardMaterial({ color: 0x1b3a6b, metalness: .4, roughness: .3 }),
+  steel:  new THREE.MeshStandardMaterial({ color: 0xa0a7b0, metalness: .6, roughness: .4 }),
+  sensor: new THREE.MeshStandardMaterial({ color: 0xe6edf3, roughness: .6 }),
+  btn:    new THREE.MeshStandardMaterial({ color: 0x3fb950, roughness: .5 }),
+  led:    new THREE.MeshStandardMaterial({ color: 0xff3b30, emissive: 0xff3b30, emissiveIntensity: .6 }),
+  pot:    new THREE.MeshStandardMaterial({ color: 0x9e6a03, roughness: .5 }),
+  gw:     new THREE.MeshStandardMaterial({ color: 0x3b4252, roughness: .6 }),
+  cloud:  new THREE.MeshStandardMaterial({ color: 0x2f3a4f, roughness: .6 }),
+  hub:    new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: .5 }),
+  screen: new THREE.MeshBasicMaterial({ color: 0x000000 }),
+};
+
+const pickables = [];
+const allLabels = [];
+const labelGroup = new THREE.Group();
+scene.add(labelGroup);
+
+// Label anchors, spread out so the crowded sensing-node labels do not overlap.
+// Each labelled part gets a thin leader line from the part to its label.
+const LABEL_AT = {
+  'Floor tile (footstep surface)':        [-6.4, 2.0, -1.0],
+  'Piezo disc array (4 discs)':           [-6.4, 1.2, 1.6],
+  'Bridge rectifier (η 0.55)':            [-0.9, 3.4, -3.6],
+  'Energy PMIC (BQ25504-class, η 0.60)':  [2.6, 2.6, -4.2],
+  'Supercapacitor 0.047 F (440.6 mJ)':    [6.8, 2.0, -2.2],
+  'Indoor PV cell (30 µW, SWEPT)':        [3.5, 4.5, -3.2],
+  'Sensing node PCB':                     [-3.6, 2.8, 6.0],
+  'ESP32-C3 MCU':                         [-1.2, 2.8, 6.0],
+  'OLED SSD1306 (I²C 0x3C, SDA 8, SCL 9)':[1.2, 2.8, 6.0],
+  'PIR motion sensor (GPIO 3)':           [3.6, 2.8, 6.0],
+  'Potentiometer = SoC proxy (GPIO 2)':   [-3.6, 1.4, 6.0],
+  'LED: sensing active (GPIO 5)':         [-1.2, 1.4, 6.0],
+  'Button: simulated event (GPIO 4)':     [1.2, 1.4, 6.0],
+  'DHT22 temp / humidity (GPIO 10)':      [3.6, 1.4, 6.0],
+  'Mains gateway (ESP-NOW/BLE → Wi-Fi)':  [6.0, 3.4, 5.0],
+  'MQTT broker (broker.hivemq.com:1883)': [9.5, 4.0, 0],
+  'Door (magnet + coil)':                  [-7.8, 3.4, 2.8],
+  'Chair / bed compression pad (piezo)':  [-6.8, 1.6, -3.6],
+  'Exercise generator (gym node)':        [-6.6, 2.4, 5.0],
+  'Python hub (hub.py)':                  [9.5, 2.6, -5.4],
+};
+const leaderMat = new THREE.LineBasicMaterial({ color: 0x484f58, transparent: true, opacity: .7 });
+
+// `meta` drives the info panel. Labels use LABEL_AT if listed, else `off` from the part.
+function part(geo, mat, pos, meta, off = [0, 0.7, 0]) {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(...pos);
+  scene.add(m);
+  m.userData = meta;
+  pickables.push(m);
+  if (meta.label) {
+    const d = document.createElement('div');
+    d.className = 'lbl';
+    d.textContent = meta.label;
+    const lo = new CSS2DObject(d);
+    const at = LABEL_AT[meta.label];
+    const anchor = at || [pos[0] + off[0], pos[1] + off[1], pos[2] + off[2]];
+    lo.position.set(...anchor);
+    labelGroup.add(lo);
+    allLabels.push(lo);
+    if (at) {
+      const g = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(...pos), new THREE.Vector3(...anchor)]);
+      const leader = new THREE.Line(g, leaderMat);
+      labelGroup.add(leader);
+      allLabels.push(leader);   // hidden together with the labels
+    }
+  }
+  return m;
+}
+
+const WOKWI = 'wokwi', DESIGN = 'design';
+
+// ---- energy harvesting chain (target hardware, not in the Wokwi project)
+part(new THREE.BoxGeometry(4, .2, 3), MAT.tile, [-3.5, .1, 1.0],
+  { label: 'Floor tile (footstep surface)', tag: DESIGN,
+    info: 'Compliant floor tile. Deflection under a footstep is assumed at 2 mm (SWEPT 1 to 3 mm). Footstep energy is derived from gait data (Horst et al. 2017): F = 1.20 × m × g, E_mech = ½·F·δ, E_elec = E_mech × 0.03 (SWEPT 0.01 to 0.05).' }, [0, 0.9, 0]);
+[[-4.4, .4], [-2.6, .4], [-4.4, 1.6], [-2.6, 1.6]].forEach(([x, z], i) =>
+  part(new THREE.CylinderGeometry(.35, .35, .08, 24), MAT.piezo, [x, .32, z],
+    { label: i === 0 ? 'Piezo disc array (4 discs)' : undefined, tag: DESIGN,
+      info: 'Piezoelectric discs under the tile. Raw output 25.3 mJ per footstep at the population median (5 to 95 %: 18 to 32 mJ), before rectifier and PMIC. The footstep count per visit is not bridgeable from CASAS (SWEPT 5 to 80).' }, [0, .7, 0]));
+part(new THREE.BoxGeometry(.7, .4, .5), MAT.ic, [.3, .5, -1.5],
+  { label: 'Bridge rectifier (η 0.55)', tag: DESIGN,
+    info: 'Full-wave bridge rectifier. Efficiency 0.55 (PLACEHOLDER). Two diode drops are a large loss against a low-current piezo source. Schottky or active rectification would do better.' }, [0, .6, 0]);
+part(new THREE.BoxGeometry(.9, .45, .7), MAT.ic, [2.0, .55, -1.5],
+  { label: 'Energy PMIC (BQ25504-class, η 0.60)', tag: DESIGN,
+    info: 'Energy-harvesting power manager. Efficiency 0.60 (PLACEHOLDER). The binding constraint is cold start (about 600 mV, 15 µW), not steady-state efficiency. Feeds the store and the node rail.' }, [0, .6, 0]);
+part(new THREE.CylinderGeometry(.35, .35, 1.4, 28), MAT.cap, [4.2, .9, -1.5],
+  { label: 'Supercapacitor 0.047 F (440.6 mJ)', tag: DESIGN,
+    info: 'Energy store. 0.047 F, 5.0 V max, 2.5 V minimum usable: 0.5·C·(Vmax² − Vmin²) = 440.6 mJ. Leakage about 432 mJ/day at max voltage (PLACEHOLDER). Alternatives: B (0.10 F), C (lithium cell, untested).' }, [0, 1.0, 0]);
+part(new THREE.CylinderGeometry(.05, .05, 2.9, 10), MAT.steel, [3.5, 1.45, -3.2], { tag: DESIGN, info: 'Support pole for the indoor PV cell.' });
+part(new THREE.BoxGeometry(2.4, .08, 1.6), MAT.pv, [3.5, 3.2, -3.2],
+  { label: 'Indoor PV cell (30 µW, SWEPT)', tag: DESIGN,
+    info: 'Indoor photovoltaic cell. About 30 µW while lit (SWEPT 0 to 200 µW). Occupancy-independent, so it is the only candidate for filling the silence. Outside the project\'s kinetic-only scope: always report the result with PV off as well.' }, [0, .6, 0])
+  .rotation.x = -0.45;
+
+// ---- the other three kinetic sources (target hardware, not in Wokwi)
+part(new THREE.BoxGeometry(.2, 2.2, 1.0), MAT.steel, [-7.8, 1.1, 2.8],
+  { label: 'Door (magnet + coil)', tag: DESIGN,
+    info: 'Door opening. A magnet passing a coil gives one flyby per opening: raw 0.40 mJ before the rectifier and PMIC. No transduction multiplier applies, so this source is far too weak to power the door node on its own.' }, [0, 1.6, 0]);
+part(new THREE.BoxGeometry(1.4, .08, 1.0), MAT.piezo, [-6.8, .3, -3.6],
+  { label: 'Chair / bed compression pad (piezo)', tag: DESIGN,
+    info: 'Compression pad under a chair or mattress. Each sit gives 2 compressions at 0.25 mJ raw each. Feeds the furniture node. Energy is small: the furniture node is dead under this source.' }, [0, .6, 0]);
+part(new THREE.BoxGeometry(1.0, 1.0, 1.4), MAT.gw, [-6.6, .5, 5.0],
+  { label: 'Exercise generator (gym node)', tag: DESIGN,
+    info: 'Exercise equipment with a generator: 180 kJ per 20-minute session (150 W, a placeholder). Synthetic: the dataset has no exercise sensing. One session gives about 59,400 mJ after conversion, far more than the 440.6 mJ store can hold, so most of it is wasted.' }, [0, 1.0, 0]);
+
+// ---- sensing node (in the Wokwi project)
+part(new THREE.BoxGeometry(3.6, .12, 2.2), MAT.pcb, [1.5, .6, 2.8],
+  { label: 'Sensing node PCB', tag: WOKWI,
+    info: 'Sensing node board. In the Wokwi project this is an ESP32-C3 DevKitM-1 with sensors on a breadboard. The real node would strip the dev board (regulators, USB-UART, LEDs) to cut its sleep current.' }, [0, 1.3, 0]);
+part(new THREE.BoxGeometry(.9, .25, .9), MAT.ic, [.8, .79, 2.8],
+  { label: 'ESP32-C3 MCU', tag: WOKWI,
+    info: 'ESP32-C3 microcontroller. Reads the store level, picks the sensing mode (HIGH 5 s, MEDIUM 20 s, LOW 60 s, CRITICAL none) and senses at that rate. Publishes state over MQTT and follows schedule commands from the hub. Deep sleep is about 1 µA (SWEPT).' }, [-.6, .8, .6]);
+part(new THREE.CylinderGeometry(.02, .02, .9, 8), MAT.steel, [.8, 1.41, 2.8],
+  { tag: WOKWI, info: 'Radio antenna. Wi-Fi in the Wokwi project. The energy model assumes ESP-NOW or BLE to a mains gateway (7.8 mJ per packet), because one Wi-Fi publish costs 789 mJ.' });
+const oledCv = document.createElement('canvas');
+oledCv.width = 256; oledCv.height = 160;
+const oledCtx = oledCv.getContext('2d');
+const oledTex = new THREE.CanvasTexture(oledCv);
+const oled = part(new THREE.PlaneGeometry(1.0, .6), new THREE.MeshBasicMaterial({ map: oledTex }), [2.5, .72, 2.2],
+  { label: 'OLED SSD1306 (I²C 0x3C, SDA 8, SCL 9)', tag: WOKWI,
+    info: 'SSD1306 OLED on I²C (address 0x3C, SDA GPIO 8, SCL GPIO 9). Shows the live state of charge, mode, sense interval and last event. The screen in this model is live.' }, [0, .6, -.5]);
+oled.rotation.x = -Math.PI / 2;
+part(new THREE.CylinderGeometry(.25, .25, .3, 20), MAT.sensor, [2.9, .85, 3.5],
+  { label: 'PIR motion sensor (GPIO 3)', tag: WOKWI,
+    info: 'Passive infrared motion sensor. Each detection is a presence event, not a footstep: a PIR re-triggers about once per second while someone is in view. Events closer than 60 s are merged into one visit (DEBOUNCE_S).' }, [0, .6, 0]);
+part(new THREE.BoxGeometry(.5, .5, .4), MAT.sensor, [1.4, .9, 3.3],
+  { label: 'DHT22 temp / humidity (GPIO 10)', tag: WOKWI,
+    info: 'DHT22 temperature and humidity sensor on GPIO 10. Read on every sensing round in HIGH and MEDIUM modes.' }, [0, .6, 0]);
+part(new THREE.CylinderGeometry(.12, .12, .12, 16), MAT.btn, [.2, .72, 2.1],
+  { label: 'Button: simulated event (GPIO 4)', tag: WOKWI,
+    info: 'Pushbutton to ground with an internal pull-up, GPIO 4. In the Wokwi project it injects a sensed event.' }, [0, .5, 0]);
+part(new THREE.SphereGeometry(.08, 12, 12), MAT.led, [.2, .85, 3.5],
+  { label: 'LED: sensing active (GPIO 5)', tag: WOKWI,
+    info: 'Red LED on GPIO 5, lit during each sensing round.' }, [0, .4, 0]);
+part(new THREE.CylinderGeometry(.2, .2, .25, 20), MAT.pot, [-.1, .85, 2.5],
+  { label: 'Potentiometer = SoC proxy (GPIO 2)', tag: WOKWI,
+    info: 'Potentiometer on the ADC pin GPIO 2. In standalone Wokwi mode it stands in for the state of charge (0 to 100 %). In the closed loop, the hub supplies the value instead.' }, [0, .6, 0]);
+
+// ---- off-board: radio, cloud, hub
+part(new THREE.BoxGeometry(1.0, 2.2, .4), MAT.gw, [6, 1.4, 3.2],
+  { label: 'Mains gateway (ESP-NOW/BLE → Wi-Fi)', tag: DESIGN,
+    info: 'Mains-powered gateway. Nodes talk to it over ESP-NOW or BLE (7.8 mJ per packet). It publishes to MQTT on their behalf, because a Wi-Fi publish from the node costs 789 mJ, about 100 times an ESP-NOW packet. Not in the Wokwi project.' }, [0, 1.6, 0]);
+part(new THREE.BoxGeometry(1.6, 2.0, 1.2), MAT.cloud, [9.5, 1.8, 0],
+  { label: 'MQTT broker (broker.hivemq.com:1883)', tag: WOKWI,
+    info: 'Public MQTT broker, no login. Topics: ehsh-<team>/<node>/state (node to hub) and ehsh-<team>/<node>/schedule (hub to node). Public brokers can drop connections, so record a good session and replay it with hub.py --replay.' }, [0, 1.4, 0]);
+part(new THREE.BoxGeometry(1.8, 1.4, 1.0), MAT.hub, [9.5, .9, -3.2],
+  { label: 'Python hub (hub.py)', tag: WOKWI,
+    info: 'The Python side of the closed loop. Subscribes to node state, picks a mode with the threshold ladder (70 / 40 / 15 %), and publishes a schedule command. The forecaster and scheduler slot in here later.' }, [0, 1.1, 0]);
+
+// ---------------------------------------------------------------- data-flow paths
+const FLOW_DEFS = {
+  harvest:      { color: 0xf2cc60, pts: [[-3.5,.5,1],[-2,1.1,.2],[-.8,.9,-.9],[.3,.8,-1.5],[2,.9,-1.5],[4.2,1.3,-1.5]] },
+  pv:           { color: 0xf2cc60, pts: [[3.5,3.1,-3.2],[3,2,-2.4],[2,1,-1.5]] },
+  power:        { color: 0xf0883e, pts: [[2,.8,-1.5],[2.2,.8,.2],[1.8,.8,1.9],[1.5,.9,2.6]] },
+  pir:          { color: 0x39d0d8, pts: [[2.9,1.1,3.5],[1.9,1.2,3.2],[.8,1.05,2.8]] },
+  dht:          { color: 0x39d0d8, pts: [[1.4,1.2,3.3],[.8,1.05,2.8]] },
+  soc:          { color: 0xf2cc60, dashed: true, pts: [[4.2,1.6,-1.5],[3,1.7,.5],[.8,1.05,2.8]] },
+  door:         { color: 0xf2cc60, pts: [[-7.6,1.0,2.8],[-5.5,1.2,1.5],[-2.5,1.1,-0.5],[.3,.8,-1.5]] },
+  comp:         { color: 0xf2cc60, pts: [[-6.8,.4,-3.6],[-4.5,1.2,-2.6],[-2,1.0,-1.4],[.3,.8,-1.5]] },
+  gym:          { color: 0xf2cc60, pts: [[-6.6,1.2,5.0],[-4.5,1.4,3.0],[-2,1.0,-0.4],[.3,.8,-1.5]] },
+  tx_node:      { color: 0xdb61a2, dashed: true, pts: [[.8,1.9,2.8],[2.5,2.4,2.8],[5,2.4,3.2]] },
+  tx_gw:        { color: 0xdb61a2, dashed: true, pts: [[6.5,1.6,3.2],[8,1.8,1.5],[8.7,1.8,.6]] },
+  tx_broker:    { color: 0xdb61a2, pts: [[9.5,1.2,-.6],[9.5,1,-2]] },
+  sched_hub:    { color: 0x3fb950, dashed: true, pts: [[9.5,1,-2.2],[9.5,1.2,-.7]] },
+  sched_broker: { color: 0x3fb950, dashed: true, pts: [[8.8,1.3,.7],[7,1.4,2.6],[6.5,1.4,3]] },
+  sched_gw:     { color: 0x3fb950, dashed: true, pts: [[5.5,1.2,3.2],[3.5,1.1,3.2],[2.4,1,3]] },
+  sched_node:   { color: 0x3fb950, dashed: true, pts: [[2.4,1,3],[.8,1.05,2.8]] },
+};
+const FLOWS = {};
+for (const [key, def] of Object.entries(FLOW_DEFS)) {
+  const curve = new THREE.CatmullRomCurve3(def.pts.map(p => new THREE.Vector3(...p)), false, 'catmullrom', .2);
+  const geo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(60));
+  const mat = def.dashed
+    ? new THREE.LineDashedMaterial({ color: def.color, dashSize: .15, gapSize: .12, transparent: true, opacity: .35 })
+    : new THREE.LineBasicMaterial({ color: def.color, transparent: true, opacity: .35 });
+  const line = new THREE.Line(geo, mat);
+  if (def.dashed) line.computeLineDistances();
+  scene.add(line);
+  FLOWS[key] = { curve, color: def.color, mat, glow: 0 };
+}
+
+const particles = [];
+const pending = [];
+const sphereGeo = new THREE.SphereGeometry(.09, 10, 10);
+const PARTICLE_S = 1.3;   // seconds for one packet to traverse a path (real time)
+
+function trigger(key, delayMs = 0) {
+  if (delayMs > 0) pending.push({ key, at: performance.now() + delayMs });
+  else spawn(key);
+}
+function spawn(key) {
+  const f = FLOWS[key];
+  if (!f) return;
+  f.glow = 1;
+  const mesh = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({ color: f.color }));
+  scene.add(mesh);
+  particles.push({ f, t: 0, mesh });
+}
+function tickVisuals(dt, now) {
+  for (let i = pending.length - 1; i >= 0; i--) {
+    if (pending[i].at <= now) { spawn(pending[i].key); pending.splice(i, 1); }
+  }
+  for (const f of Object.values(FLOWS)) {
+    f.glow = Math.max(0, f.glow - dt * 1.5);
+    f.mat.opacity = .25 + .6 * f.glow;
+  }
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.t += dt / PARTICLE_S;
+    if (p.t >= 1) { scene.remove(p.mesh); p.mesh.material.dispose(); particles.splice(i, 1); continue; }
+    p.mesh.position.copy(p.f.curve.getPointAt(p.t));
+  }
+}
+
+// ---------------------------------------------------------------- UI
+const $ = id => document.getElementById(id);
+const sparkCv = $('spark'), sparkCtx = sparkCv.getContext('2d');
+
+function drawOLED() {
+  const c = oledCtx;
+  c.fillStyle = '#000'; c.fillRect(0, 0, 256, 160);
+  c.fillStyle = '#7CFC9A';
+  c.font = 'bold 26px monospace';
+  c.fillText(`SoC ${pct().toFixed(0)}%`, 10, 36);
+  c.font = '20px monospace';
+  c.fillText(`MODE ${S.mode}`, 10, 72);
+  c.fillText(S.interval ? `every ${S.interval} s` : 'no sensing', 10, 102);
+  c.font = '15px monospace';
+  c.fillText(S.lastEvent.slice(0, 27), 10, 136);
+  oledTex.needsUpdate = true;
+}
+
+function drawSpark() {
+  const w = sparkCv.width, h = sparkCv.height, c = sparkCtx;
+  c.fillStyle = '#0d1117'; c.fillRect(0, 0, w, h);
+  c.strokeStyle = '#30363d'; c.setLineDash([4, 4]);
+  for (const th of [70, 40, 15]) {
+    const y = h - th / 100 * h;
+    c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke();
+  }
+  c.setLineDash([]);
+  if (S.hist.length > 1) {
+    c.strokeStyle = '#3fb950'; c.lineWidth = 2; c.beginPath();
+    S.hist.forEach((v, i) => {
+      const x = i / (600 - 1) * w, y = h - v / 100 * h;
+      i ? c.lineTo(x, y) : c.moveTo(x, y);
+    });
+    c.stroke();
+  }
+}
+
+function fmtClock() {
+  const d = Math.floor(S.t / 86400), h = Math.floor(S.t / 3600) % 24,
+        m = Math.floor(S.t / 60) % 60, s = S.t % 60;
+  return `d${d} ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+let lastStatsDraw = 0;
+function updateStats() {
+  const p = pct();
+  $('soc').textContent = `${p.toFixed(0)}%`;
+  $('mode').textContent = S.mode;
+  $('socbar').style.width = `${Math.min(100, p).toFixed(1)}%`;
+  $('interval').textContent = S.interval ? `${S.interval} s` : 'none';
+  $('clock').textContent = fmtClock();
+  $('foots').textContent = S.foots;
+  $('doors_n').textContent = S.doors;
+  $('sits_n').textContent = S.sits;
+  $('gyms_n').textContent = S.gyms;
+  $('senses').textContent = S.senses;
+  $('deferred').textContent = S.deferred;
+  $('harv').textContent = `${S.harvested.toFixed(0)} mJ`;
+  $('spent').textContent = `${S.spent.toFixed(0)} mJ`;
+  $('ovh').textContent = `${S.overhead.toFixed(0)} mJ`;
+  $('wasted').textContent = `${S.wasted.toFixed(0)} mJ`;
+  $('crit').textContent = `${S.crit} s`;
+  $('log').textContent = logLines.join('\n');
+  drawSpark();
+}
+
+function showInfo(meta) {
+  const tag = meta.tag === WOKWI
+    ? '<span class="tag wokwi">in the Wokwi project</span>'
+    : '<span class="tag design">target hardware: design only, not in Wokwi</span>';
+  $('info').innerHTML = `<h1>${meta.label || 'Part'}</h1>${tag}<p>${meta.info || ''}</p>`;
+}
+
+$('play').onclick = e => { S.paused = !S.paused; e.target.textContent = S.paused ? 'Play' : 'Pause'; };
+$('footstep').onclick = () => footstep();
+$('precharge').onclick = () => { S.E = E_MAX * .5; S.lastEvent = 'pre-charged 50%'; log('pre-charged to 50%'); };
+$('reset').onclick = () => { S = freshState(); logLines.length = 0; $('play').textContent = 'Pause'; };
+$('speed').oninput = e => { S.speed = +e.target.value; $('speedv').textContent = `${S.speed}×`; };
+$('doors').oninput = e => { S.doorRate = +e.target.value; $('doorv').textContent = S.doorRate; };
+$('sits').oninput = e => { S.sitRate = +e.target.value; $('sitv').textContent = S.sitRate; };
+$('gyms').oninput = e => { S.gymRate = +e.target.value; $('gymv').textContent = S.gymRate; };
+$('traffic').oninput = e => { S.traffic = +e.target.value; $('trafficv').textContent = `${S.traffic} / min`; };
+$('sun').onclick = e => { S.sun = !S.sun; e.target.textContent = S.sun ? 'On' : 'Off'; log(`sunlight ${S.sun ? 'on' : 'off'}`); };
+let labelsOn = true;
+$('labels').onclick = e => {
+  labelsOn = !labelsOn;
+  allLabels.forEach(l => l.visible = labelsOn);
+  e.target.textContent = labelsOn ? 'On' : 'Off';
+};
+
+const ray = new THREE.Raycaster();
+const ptr = new THREE.Vector2();
+renderer.domElement.addEventListener('click', e => {
+  ptr.x = e.clientX / innerWidth * 2 - 1;
+  ptr.y = -(e.clientY / innerHeight) * 2 + 1;
+  ray.setFromCamera(ptr, camera);
+  const hit = ray.intersectObjects(pickables, false)[0];
+  if (hit) showInfo(hit.object.userData);
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  css.setSize(innerWidth, innerHeight);
+});
+
+// ---------------------------------------------------------------- main loop
+let last = performance.now(), acc = 0, frame = 0;
+logLines.length = 0;
+drawOLED();
+function animate(now) {
+  requestAnimationFrame(animate);
+  const dt = Math.min(.1, (now - last) / 1000);
+  last = now;
+  if (!S.paused) {
+    acc += dt * S.speed;
+    while (acc >= 1) { simStep(); acc -= 1; }
+  }
+  tickVisuals(S.paused ? 0 : dt, now);
+  if (frame++ % 12 === 0) { drawOLED(); updateStats(); }
+  controls.update();
+  renderer.render(scene, camera);
+  css.render(scene, camera);
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

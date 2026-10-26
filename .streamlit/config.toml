@@ -1,0 +1,9 @@
+# The dashboard's own CSS sets a light surface, so pin the base theme to light.
+# Without this, a user whose Streamlit is in dark mode gets light-on-light text
+# and the whole page is unreadable.
+[theme]
+base = "light"
+backgroundColor = "#EEF1F4"
+secondaryBackgroundColor = "#E3E8ED"
+textColor = "#161D26"
+primaryColor = "#1F6F6B"

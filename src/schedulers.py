@@ -249,6 +249,18 @@ class OracleForecaster:
         # same silence definition as SilenceForecaster: below standing overhead
         self.silent = np.asarray(harvest) <= float(starve_mj_per_step)
         self.n = len(self.silent)
+        # Precomputed once. Walking the trace inside upcoming_silence is O(n)
+        # per call; on a starved node a drought spans almost the whole trace,
+        # so the walk made every run O(n^2) and the door node never finished.
+        # next_silent[i] = first silent index >= i (n if none)
+        # run_len[i]     = length of the silent run starting at i (0 if active)
+        idx = np.arange(self.n)
+        marked = np.where(self.silent, idx, self.n)
+        self.next_silent = np.minimum.accumulate(marked[::-1])[::-1] if self.n else marked
+        self.next_silent = np.append(self.next_silent, self.n)
+        self.run_len = np.zeros(self.n + 1, dtype=np.int64)
+        for i in range(self.n - 1, -1, -1):          # one linear pass, at init only
+            self.run_len[i] = self.run_len[i + 1] + 1 if self.silent[i] else 0
 
     def fit(self, harvest):        # nothing to fit; kept for interface parity
         return self
@@ -259,12 +271,9 @@ class OracleForecaster:
 
     def upcoming_silence(self, t, lookahead, thresh=0.15):
         t = int(t)
-        k = 0
-        while k < lookahead and t + k < self.n and not self.silent[t + k]:
-            k += 1                                  # walk to the drought's start
-        if k >= lookahead or t + k >= self.n:
+        if t >= self.n:
+            return 0
+        s = int(self.next_silent[t])                # drought's start
+        if s >= self.n or s - t >= lookahead:
             return 0                                # none begins within horizon
-        d = 0
-        while t + k + d < self.n and self.silent[t + k + d]:
-            d += 1                                  # measure its true length
-        return d
+        return int(self.run_len[s])                 # its true length

@@ -22,6 +22,25 @@ import pandas as pd
 import streamlit as st
 import yaml
 
+def chart(c, **kw):
+    """st.altair_chart across Streamlit versions.
+
+    `width="stretch"` replaced `use_container_width` only in recent releases;
+    older ones raise TypeError. Try the new name, fall back to the old one.
+    """
+    try:
+        return st.altair_chart(c, **kw)
+    except TypeError:
+        return st.altair_chart(c, use_container_width=True, **kw)
+
+
+def dataframe(df, **kw):
+    try:
+        return st.dataframe(df,  **kw)
+    except TypeError:
+        return st.dataframe(df, use_container_width=True, **kw)
+
+
 ROOT = Path(__file__).resolve().parents[1]
 REPORTS = ROOT / "reports"
 sys.path.insert(0, str(ROOT / "src"))
@@ -39,8 +58,12 @@ st.set_page_config(page_title="Harvested-energy scheduling — results",
 
 st.markdown(f"""
 <style>
-  .stApp {{ background:{PAPER}; }}
-  html, body, [class*="css"] {{ color:{INK};
+  .stApp, .main, section[data-testid="stMain"] {{ background:{PAPER} !important; }}
+  section[data-testid="stSidebar"] {{ background:#E3E8ED !important; }}
+  html, body, [class*="css"], .stApp, .stMarkdown, p, li, span, label,
+  h1, h2, h3, h4, h5, h6, [data-testid="stMetricValue"],
+  [data-testid="stMetricLabel"], section[data-testid="stSidebar"] * {{
+      color:{INK} !important;
       font-family:"Inter","Helvetica Neue",system-ui,sans-serif; }}
   h1,h2,h3 {{ font-weight:640; letter-spacing:-.015em; }}
   .num {{ font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; }}
@@ -173,14 +196,13 @@ with tab1:
                  alt.Tooltip("gain:Q", format="+.3f"),
                  alt.Tooltip("sd:Q", title="seed sd", format=".3f")])
     noise = base.mark_tick(thickness=2, size=20, color=STORED).encode(x="sd:Q")
-    st.altair_chart((bars + noise).properties(height=26 * len(g) + 40),
-                    width='stretch')
+    chart((bars + noise).properties(height=26 * len(g) + 40))
 
     st.markdown("#### Capture levels differ tenfold between homes. The bound does not.")
     lvl = g.melt(id_vars=["house", "residents", "node"],
                  value_vars=["hist", "oracle"],
                  var_name="forecaster", value_name="capture")
-    st.altair_chart(
+    chart(
         alt.Chart(lvl).mark_circle(size=95, opacity=.8).encode(
             x=alt.X("capture:Q", title="critical-event capture during silence"),
             y=alt.Y("house:N", title=None,
@@ -190,7 +212,7 @@ with tab1:
                                             range=[SILENCE, ORACLE])),
             tooltip=["house", "residents", "node", "forecaster",
                      alt.Tooltip("capture:Q", format=".3f")],
-        ).properties(height=190), width='stretch')
+        ).properties(height=190))
     st.caption("Homes span 1, 2 and more than 2 residents. Resident counts from "
                "the Zenodo 15708568 record description.")
 
@@ -214,7 +236,7 @@ with tab2:
         abl = load_ablation(abl_house)
     if not abl.empty:
         a = abl[abl.node.isin(sel_nodes)]
-        st.altair_chart(
+        chart(
             alt.Chart(a).mark_bar(opacity=.9).encode(
                 x=alt.X("scheduler:N", title=None, axis=alt.Axis(labelAngle=-35)),
                 y=alt.Y("mean(capture_silence):Q", title="capture during silence"),
@@ -222,7 +244,7 @@ with tab2:
                                 scale=alt.Scale(range=[MUTED, MUTED, SILENCE,
                                                        SILENCE, ORACLE])),
                 column=alt.Column("node:N", title=None),
-            ).properties(height=230, width=125), width='content')
+            ).properties(height=230, width=125))
         st.markdown(
             '<div class="claim">The jump is from S1 (spend whenever affordable) '
             'to S2–S4 (hold a reserve against future silence). Reserving is what '
@@ -273,8 +295,7 @@ with tab3:
         line = alt.Chart(trace).mark_line(color=SILENCE, strokeDash=[4, 3],
                                           strokeWidth=1.4).encode(
             x="hour:Q", y="reserve:Q")
-        st.altair_chart((area + line).properties(height=260),
-                        width='stretch')
+        chart((area + line).properties(height=260))
         m1, m2, m3 = st.columns(3)
         m1.metric("Time with an empty store", f"{res['outage_frac']:.0%}")
         m2.metric("Critical events caught in silence",
@@ -316,7 +337,7 @@ with tab4:
                                  + sorted(set(prov["src"]) - set(order))))
     view = prov.copy()
     view["src"] = pd.Categorical(view["src"], present, ordered=True)
-    st.dataframe(view.sort_values(["src", "constant"]), width='stretch',
+    dataframe(view.sort_values(["src", "constant"]),
                  hide_index=True, column_config={
                      "constant": st.column_config.TextColumn("constant", width="large"),
                      "src": st.column_config.TextColumn("provenance"),
