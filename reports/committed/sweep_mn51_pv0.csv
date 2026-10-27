@@ -1,0 +1,281 @@
+footsteps_per_visit,footstep_mj,node,scheduler,outage_mean,outage_sd,capture_mean,capture_sd,alive
+5,0.1,ambient,S1 reactive,1.0,0.0,0.0,0.0,False
+5,0.1,ambient,S4 forecast rate,1.0,0.0,0.0,0.0,False
+5,0.1,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+5,0.1,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+5,0.1,floor,S1 reactive,1.0,0.0,0.0,0.0,False
+5,0.1,floor,S4 forecast rate,1.0,0.0,0.0,0.0,False
+5,0.1,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+5,0.1,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+5,0.6,ambient,S1 reactive,0.9573,0.0,0.0,0.0,False
+5,0.6,ambient,S4 forecast rate,0.9573,0.0,0.0,0.0,False
+5,0.6,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+5,0.6,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+5,0.6,floor,S1 reactive,0.9118,0.0,0.0,0.0,False
+5,0.6,floor,S4 forecast rate,0.9118,0.0,0.0,0.0,False
+5,0.6,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+5,0.6,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+5,2.0,ambient,S1 reactive,0.7837,0.0,0.0,0.0,False
+5,2.0,ambient,S4 forecast rate,0.751,0.0,0.0,0.0,False
+5,2.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+5,2.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+5,2.0,floor,S1 reactive,0.6525,0.0,0.0,0.0,False
+5,2.0,floor,S4 forecast rate,0.5542,0.0017,0.0007,0.0016,False
+5,2.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+5,2.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+5,6.0,ambient,S1 reactive,0.7733,0.0,0.0,0.0,False
+5,6.0,ambient,S4 forecast rate,0.5576,0.0085,0.0016,0.0022,False
+5,6.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+5,6.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+5,6.0,floor,S1 reactive,0.6421,0.0,0.0,0.0,False
+5,6.0,floor,S4 forecast rate,0.4729,0.0057,0.0123,0.0084,True
+5,6.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+5,6.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+5,11.0,ambient,S1 reactive,0.7283,0.0,0.0,0.0,False
+5,11.0,ambient,S4 forecast rate,0.4667,0.006,0.1582,0.0159,True
+5,11.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+5,11.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+5,11.0,floor,S1 reactive,0.5931,0.0003,0.0,0.0,False
+5,11.0,floor,S4 forecast rate,0.2531,0.0129,0.4794,0.0194,True
+5,11.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+5,11.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+5,25.3,ambient,S1 reactive,0.6976,0.0013,0.0,0.0,False
+5,25.3,ambient,S4 forecast rate,0.1993,0.0109,0.6977,0.0246,True
+5,25.3,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+5,25.3,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+5,25.3,floor,S1 reactive,0.5564,0.0008,0.0011,0.0024,False
+5,25.3,floor,S4 forecast rate,0.1739,0.0115,0.7011,0.0301,True
+5,25.3,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+5,25.3,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+5,32.0,ambient,S1 reactive,0.6788,0.002,0.0009,0.0019,False
+5,32.0,ambient,S4 forecast rate,0.1903,0.0112,0.719,0.0262,True
+5,32.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+5,32.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+5,32.0,floor,S1 reactive,0.5208,0.0004,0.0207,0.0122,False
+5,32.0,floor,S4 forecast rate,0.1702,0.0106,0.7077,0.0268,True
+5,32.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+5,32.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+10,0.1,ambient,S1 reactive,1.0,0.0,0.0,0.0,False
+10,0.1,ambient,S4 forecast rate,1.0,0.0,0.0,0.0,False
+10,0.1,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+10,0.1,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+10,0.1,floor,S1 reactive,1.0,0.0,0.0,0.0,False
+10,0.1,floor,S4 forecast rate,1.0,0.0,0.0,0.0,False
+10,0.1,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+10,0.1,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+10,0.6,ambient,S1 reactive,0.8669,0.0,0.0,0.0,False
+10,0.6,ambient,S4 forecast rate,0.8669,0.0,0.0,0.0,False
+10,0.6,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+10,0.6,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+10,0.6,floor,S1 reactive,0.7183,0.0,0.0,0.0,False
+10,0.6,floor,S4 forecast rate,0.7129,0.0,0.0,0.0,False
+10,0.6,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+10,0.6,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+10,2.0,ambient,S1 reactive,0.8033,0.0,0.0,0.0,False
+10,2.0,ambient,S4 forecast rate,0.6005,0.007,0.0035,0.0036,False
+10,2.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+10,2.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+10,2.0,floor,S1 reactive,0.6788,0.0,0.0,0.0,False
+10,2.0,floor,S4 forecast rate,0.4996,0.0038,0.0009,0.002,True
+10,2.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+10,2.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+10,6.0,ambient,S1 reactive,0.7308,0.0,0.0,0.0,False
+10,6.0,ambient,S4 forecast rate,0.4395,0.0075,0.2237,0.0179,True
+10,6.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+10,6.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+10,6.0,floor,S1 reactive,0.5831,0.0001,0.0,0.0,False
+10,6.0,floor,S4 forecast rate,0.2265,0.0133,0.5656,0.028,True
+10,6.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+10,6.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+10,11.0,ambient,S1 reactive,0.7089,0.0018,0.0,0.0,False
+10,11.0,ambient,S4 forecast rate,0.2173,0.0114,0.6602,0.0249,True
+10,11.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+10,11.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+10,11.0,floor,S1 reactive,0.5653,0.0014,0.0,0.0,False
+10,11.0,floor,S4 forecast rate,0.1766,0.0112,0.6968,0.033,True
+10,11.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+10,11.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+10,25.3,ambient,S1 reactive,0.6077,0.002,0.0257,0.0068,False
+10,25.3,ambient,S4 forecast rate,0.1841,0.0114,0.7304,0.0245,True
+10,25.3,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+10,25.3,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+10,25.3,floor,S1 reactive,0.4888,0.0016,0.0458,0.0196,True
+10,25.3,floor,S4 forecast rate,0.1635,0.0101,0.7218,0.0264,True
+10,25.3,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+10,25.3,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+10,32.0,ambient,S1 reactive,0.5785,0.0009,0.0486,0.0137,False
+10,32.0,ambient,S4 forecast rate,0.1824,0.0116,0.7329,0.0238,True
+10,32.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+10,32.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+10,32.0,floor,S1 reactive,0.4716,0.002,0.0558,0.0169,True
+10,32.0,floor,S4 forecast rate,0.159,0.01,0.7283,0.0266,True
+10,32.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+10,32.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+20,0.1,ambient,S1 reactive,0.9616,0.0,0.0,0.0,False
+20,0.1,ambient,S4 forecast rate,0.9616,0.0,0.0,0.0,False
+20,0.1,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+20,0.1,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+20,0.1,floor,S1 reactive,0.9218,0.0,0.0,0.0,False
+20,0.1,floor,S4 forecast rate,0.9218,0.0,0.0,0.0,False
+20,0.1,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+20,0.1,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+20,0.6,ambient,S1 reactive,0.7786,0.0,0.0,0.0,False
+20,0.6,ambient,S4 forecast rate,0.7078,0.0019,0.0,0.0,False
+20,0.6,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+20,0.6,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+20,0.6,floor,S1 reactive,0.657,0.0,0.0,0.0,False
+20,0.6,floor,S4 forecast rate,0.5322,0.0033,0.0009,0.0019,False
+20,0.6,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+20,0.6,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+20,2.0,ambient,S1 reactive,0.8849,0.0,0.0,0.0,False
+20,2.0,ambient,S4 forecast rate,0.5273,0.0077,0.0454,0.0033,False
+20,2.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+20,2.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+20,2.0,floor,S1 reactive,0.7643,0.0,0.0,0.0,False
+20,2.0,floor,S4 forecast rate,0.406,0.0077,0.1485,0.0338,True
+20,2.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+20,2.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+20,6.0,ambient,S1 reactive,0.6954,0.0013,0.0,0.0,False
+20,6.0,ambient,S4 forecast rate,0.2059,0.0132,0.687,0.0221,True
+20,6.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+20,6.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+20,6.0,floor,S1 reactive,0.5499,0.0014,0.0,0.0,False
+20,6.0,floor,S4 forecast rate,0.1751,0.0113,0.699,0.031,True
+20,6.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+20,6.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+20,11.0,ambient,S1 reactive,0.6242,0.0018,0.0097,0.0037,False
+20,11.0,ambient,S4 forecast rate,0.1861,0.0118,0.7286,0.0234,True
+20,11.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+20,11.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+20,11.0,floor,S1 reactive,0.4858,0.0023,0.0425,0.0208,True
+20,11.0,floor,S4 forecast rate,0.1658,0.0114,0.7164,0.0293,True
+20,11.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+20,11.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+20,25.3,ambient,S1 reactive,0.5474,0.0006,0.0856,0.0093,False
+20,25.3,ambient,S4 forecast rate,0.1764,0.013,0.7338,0.024,True
+20,25.3,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+20,25.3,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+20,25.3,floor,S1 reactive,0.4673,0.0019,0.0656,0.0188,True
+20,25.3,floor,S4 forecast rate,0.1561,0.0077,0.7339,0.0294,True
+20,25.3,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+20,25.3,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+20,32.0,ambient,S1 reactive,0.5381,0.0007,0.0998,0.0061,False
+20,32.0,ambient,S4 forecast rate,0.1727,0.0136,0.7338,0.024,True
+20,32.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+20,32.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+20,32.0,floor,S1 reactive,0.4583,0.002,0.0656,0.0188,True
+20,32.0,floor,S4 forecast rate,0.1558,0.0075,0.736,0.0335,True
+20,32.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+20,32.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+40,0.1,ambient,S1 reactive,0.914,0.0,0.0,0.0,False
+40,0.1,ambient,S4 forecast rate,0.914,0.0,0.0,0.0,False
+40,0.1,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+40,0.1,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+40,0.1,floor,S1 reactive,0.8228,0.0,0.0,0.0,False
+40,0.1,floor,S4 forecast rate,0.8228,0.0,0.0,0.0,False
+40,0.1,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+40,0.1,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+40,0.6,ambient,S1 reactive,0.7847,0.0,0.0,0.0,False
+40,0.6,ambient,S4 forecast rate,0.5839,0.0059,0.0,0.0,False
+40,0.6,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+40,0.6,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+40,0.6,floor,S1 reactive,0.6479,0.0,0.0,0.0,False
+40,0.6,floor,S4 forecast rate,0.489,0.0036,0.0,0.0,True
+40,0.6,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+40,0.6,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+40,2.0,ambient,S1 reactive,0.7231,0.0011,0.0,0.0,False
+40,2.0,ambient,S4 forecast rate,0.3142,0.023,0.5026,0.0247,True
+40,2.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+40,2.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+40,2.0,floor,S1 reactive,0.5813,0.0015,0.0,0.0,False
+40,2.0,floor,S4 forecast rate,0.1852,0.0109,0.6834,0.0257,True
+40,2.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+40,2.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+40,6.0,ambient,S1 reactive,0.61,0.0015,0.0204,0.0042,False
+40,6.0,ambient,S4 forecast rate,0.1849,0.0117,0.7304,0.0245,True
+40,6.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+40,6.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+40,6.0,floor,S1 reactive,0.4841,0.001,0.0458,0.0196,True
+40,6.0,floor,S4 forecast rate,0.164,0.0111,0.7197,0.0274,True
+40,6.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+40,6.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+40,11.0,ambient,S1 reactive,0.5514,0.0025,0.0706,0.0116,False
+40,11.0,ambient,S4 forecast rate,0.178,0.0119,0.7338,0.024,True
+40,11.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+40,11.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+40,11.0,floor,S1 reactive,0.466,0.0015,0.0612,0.0207,True
+40,11.0,floor,S4 forecast rate,0.1563,0.0078,0.7328,0.0274,True
+40,11.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+40,11.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+40,25.3,ambient,S1 reactive,0.5345,0.0013,0.1032,0.0091,False
+40,25.3,ambient,S4 forecast rate,0.1681,0.0123,0.7338,0.024,True
+40,25.3,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+40,25.3,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+40,25.3,floor,S1 reactive,0.446,0.0013,0.0711,0.0188,True
+40,25.3,floor,S4 forecast rate,0.1556,0.0073,0.736,0.0335,True
+40,25.3,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+40,25.3,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+40,32.0,ambient,S1 reactive,0.5327,0.0012,0.105,0.0088,False
+40,32.0,ambient,S4 forecast rate,0.1676,0.0119,0.7338,0.024,True
+40,32.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+40,32.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+40,32.0,floor,S1 reactive,0.4386,0.0019,0.092,0.0155,True
+40,32.0,floor,S4 forecast rate,0.1556,0.0073,0.736,0.0335,True
+40,32.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+40,32.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+80,0.1,ambient,S1 reactive,0.8093,0.0,0.0,0.0,False
+80,0.1,ambient,S4 forecast rate,0.8034,0.0,0.0,0.0,False
+80,0.1,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+80,0.1,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+80,0.1,floor,S1 reactive,0.6643,0.0,0.0,0.0,False
+80,0.1,floor,S4 forecast rate,0.6041,0.0019,0.0,0.0,False
+80,0.1,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+80,0.1,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+80,0.6,ambient,S1 reactive,0.7486,0.0,0.0,0.0,False
+80,0.6,ambient,S4 forecast rate,0.4989,0.0059,0.0798,0.0128,True
+80,0.6,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+80,0.6,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+80,0.6,floor,S1 reactive,0.6058,0.0,0.0,0.0,False
+80,0.6,floor,S4 forecast rate,0.311,0.0155,0.3244,0.0337,True
+80,0.6,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+80,0.6,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+80,2.0,ambient,S1 reactive,0.6788,0.002,0.0009,0.0019,False
+80,2.0,ambient,S4 forecast rate,0.1903,0.0112,0.719,0.0262,True
+80,2.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+80,2.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+80,2.0,floor,S1 reactive,0.5208,0.0004,0.0207,0.0122,False
+80,2.0,floor,S4 forecast rate,0.1702,0.0106,0.7077,0.0268,True
+80,2.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+80,2.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+80,6.0,ambient,S1 reactive,0.549,0.0011,0.0777,0.0095,False
+80,6.0,ambient,S4 forecast rate,0.1757,0.0116,0.7338,0.024,True
+80,6.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+80,6.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+80,6.0,floor,S1 reactive,0.4668,0.0014,0.0645,0.0184,True
+80,6.0,floor,S4 forecast rate,0.1558,0.0074,0.7328,0.0274,True
+80,6.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+80,6.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+80,11.0,ambient,S1 reactive,0.5351,0.0012,0.1032,0.0091,False
+80,11.0,ambient,S4 forecast rate,0.1696,0.013,0.7338,0.024,True
+80,11.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+80,11.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+80,11.0,floor,S1 reactive,0.4498,0.0013,0.0666,0.0195,True
+80,11.0,floor,S4 forecast rate,0.1556,0.0073,0.736,0.0335,True
+80,11.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+80,11.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+80,25.3,ambient,S1 reactive,0.5325,0.0011,0.105,0.0088,False
+80,25.3,ambient,S4 forecast rate,0.1676,0.0119,0.7338,0.024,True
+80,25.3,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+80,25.3,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+80,25.3,floor,S1 reactive,0.4387,0.0011,0.0997,0.013,True
+80,25.3,floor,S4 forecast rate,0.1556,0.0073,0.736,0.0335,True
+80,25.3,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+80,25.3,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
+80,32.0,ambient,S1 reactive,0.5325,0.0011,0.105,0.0088,False
+80,32.0,ambient,S4 forecast rate,0.1676,0.0119,0.7338,0.024,True
+80,32.0,door,S1 reactive,0.9967,0.0,0.0,0.0,False
+80,32.0,door,S4 forecast rate,0.9967,0.0,0.0,0.0,False
+80,32.0,floor,S1 reactive,0.4387,0.0011,0.0997,0.013,True
+80,32.0,floor,S4 forecast rate,0.1556,0.0073,0.736,0.0335,True
+80,32.0,furniture,S1 reactive,1.0,0.0,0.0,0.0,False
+80,32.0,furniture,S4 forecast rate,1.0,0.0,0.0,0.0,False
